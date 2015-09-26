@@ -10817,6 +10817,10 @@ p.limit = function(mMin, mMax) {
 	this._checkLimit();
 };
 
+p.setEasing = function(mValue) {
+	this._easing = mValue;
+};
+
 p._checkLimit = function() {
 	if(this._min !== undefined && this._targetValue < this._min) {
 		this._targetValue = this._min;
@@ -10937,7 +10941,7 @@ p._init = function() {
 	if(GL.depthTextureExt) {
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.FLOAT, null);
 	} else {
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.FLOAT, null);
 	}
 	
 	// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -10957,13 +10961,15 @@ p._init = function() {
 	if(GL.depthTextureExt === null) {
 		var renderbuffer = gl.createRenderbuffer();
 		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-		// gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.frameBuffer.width, this.frameBuffer.height);
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.frameBuffer.width, this.frameBuffer.height);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
+    	gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
 		// gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);	
 		// if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
 	 //      throw new Error('Rendering to this texture is not supported (incomplete framebuffer)');
 	 //    }
 
-	 	gl.renderbufferStorage( gl.RENDERBUFFER, gl.RGBA4, this.frameBuffer.width, this.frameBuffer.height );
+	 	// gl.renderbufferStorage( gl.RENDERBUFFER, gl.RGBA4, this.frameBuffer.width, this.frameBuffer.height );
 	} else {
 		this.depthTexture       = gl.createTexture();
 		this.glDepthTexture		= new GLTexture(this.depthTexture, true);
@@ -11021,6 +11027,14 @@ module.exports = FrameBuffer;
 var GL = _dereq_("./GLTools");
 var gl;
 var ShaderLibs = _dereq_("./ShaderLibs");
+
+var addLineNumbers = function ( string ) {
+	var lines = string.split( '\n' );
+	for ( var i = 0; i < lines.length; i ++ ) {
+		lines[ i ] = ( i + 1 ) + ': ' + lines[ i ];
+	}
+	return lines.join( '\n' );
+};
 
 var GLShader = function(aVertexShaderId, aFragmentShaderId) {
 	gl              	 = GL.gl;
@@ -11091,7 +11105,7 @@ p.createVertexShaderProgram = function(aStr) {
 
 	if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 		console.warn("Error in Vertex Shader : ", this.idVertex, ":", gl.getShaderInfoLog(shader));
-		console.log(aStr);
+		console.log(addLineNumbers(aStr));
 		return null;
 	}
 
@@ -11114,7 +11128,7 @@ p.createFragmentShaderProgram = function(aStr) {
 
 	if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 		console.warn("Error in Fragment Shader: ", this.idFragment, ":" , gl.getShaderInfoLog(shader));
-		console.log(aStr);
+		console.log(addLineNumbers(aStr));
 		return null;
 	}
 
@@ -11179,14 +11193,18 @@ p.uniform = function(aName, aType, aValue) {
 		this.shaderProgram[aName] = oUniform.uniformLoc;
 	}
 
-	// console.log('Uniform : ', aName);
 
 	if(aType.indexOf("Matrix") === -1) {
 		if(!hasUniform) {
+			var isArray = Array.isArray(aValue);
+			if(isArray) {
+				this.uniformValues[aName] = aValue.concat();
+			} else {
+				this.uniformValues[aName] = aValue;	
+			}
 			gl[aType](this.shaderProgram[aName], aValue);
-			this.uniformValues[aName] = aValue;
-			// console.debug('Set uniform', aName, aType, aValue);
 		} else {
+			// if(aName == 'position') console.log('Has uniform', this.checkUniform(aName, aType, aValue));
 			if(this.checkUniform(aName, aType, aValue)) {
 				gl[aType](this.shaderProgram[aName], aValue);
 				// console.debug('Set uniform', aName, aType, aValue);
@@ -11195,7 +11213,7 @@ p.uniform = function(aName, aType, aValue) {
 	} else {
 		gl[aType](this.shaderProgram[aName], false, aValue);
 		if(!hasUniform) {
-			gl[aType](this.shaderProgram[aName], aValue);
+			gl[aType](this.shaderProgram[aName], false, aValue);
 			this.uniformValues[aName] = aValue;
 			// console.debug('Set uniform', aName, aType, aValue);
 		}
@@ -11208,6 +11226,7 @@ p.uniform = function(aName, aType, aValue) {
 };
 
 p.checkUniform = function(aName, aType, aValue) {
+	var isArray = Array.isArray(aValue);
 
 	if(!this.uniformValues[aName]) {
 		this.uniformValues[aName] = aValue;
@@ -11220,13 +11239,30 @@ p.checkUniform = function(aName, aType, aValue) {
 	}
 
 	var uniformValue = this.uniformValues[aName];
-	var hasChanged = !(uniformValue === aValue);
+	var hasChanged = false;
+
+	if(isArray) {
+		for(var i=0; i<uniformValue.length; i++) {
+			if(uniformValue[i] !== aValue[i]) {
+				hasChanged = true;
+				break;
+			}
+		}	
+	} else {
+		hasChanged = uniformValue !== aValue;
+	}
+	
 	
 	if(hasChanged) {
-		this.uniformValues[aName] = aValue;
+		if(isArray) {
+			this.uniformValues[aName] = aValue.concat();
+		} else {
+			this.uniformValues[aName] = aValue;	
+		}
+		
 	}
-	return hasChanged;
 
+	return hasChanged;
 };
 
 
@@ -11371,12 +11407,15 @@ function GLTools() {
 var p = GLTools.prototype;
 
 p.init = function(mCanvas, mWidth, mHeight, parameters) {
-	this.canvas      = mCanvas || document.createElement("canvas");
+	if(this.canvas === null) {
+		this.canvas      = mCanvas || document.createElement("canvas");
+	}
 	var params       = parameters || {};
 	params.antialias = true;
-	this.gl          = this.canvas.getContext("experimental-webgl", params);
 
+	this.gl          = this.canvas.getContext("webgl", params) || this.canvas.getContext("experimental-webgl", params);
 	console.log('GL TOOLS : ', this.gl);
+	
 	
 	if(mWidth !== undefined && mHeight !== undefined) {
 		this.setSize(mWidth, mHeight);
@@ -11391,12 +11430,13 @@ p.init = function(mCanvas, mWidth, mHeight, parameters) {
 	this.gl.clearColor( 0, 0, 0, 1 );
 	this.gl.clearDepth( 1 );
 
-	this.matrix                = glm.mat4.create();
+	this.matrix                 = glm.mat4.create();
 	glm.mat4.identity(this.matrix);
-	this.normalMatrix          = glm.mat3.create();
-	this.depthTextureExt       = this.gl.getExtension("WEBKIT_WEBGL_depth_texture"); // Or browser-appropriate prefix
-	this.floatTextureExt       = this.gl.getExtension("OES_texture_float"); // Or browser-appropriate prefix
-	this.floatTextureLinearExt = this.gl.getExtension("OES_texture_float_linear"); // Or browser-appropriate prefix
+	this.normalMatrix           = glm.mat3.create();
+	this.depthTextureExt        = this.gl.getExtension("WEBKIT_WEBGL_depth_texture"); // Or browser-appropriate prefix
+	this.floatTextureExt        = this.gl.getExtension("OES_texture_float"); // Or browser-appropriate prefix
+	this.floatTextureLinearExt  = this.gl.getExtension("OES_texture_float_linear"); // Or browser-appropriate prefix
+	this.standardDerivativesExt = this.gl.getExtension("OES_standard_derivatives"); // Or browser-appropriate prefix
 
 	this.enabledVertexAttribute = [];
 	this.enableAlphaBlending();
@@ -12301,15 +12341,15 @@ var ShaderLibs = function() { };
 
 ShaderLibs.shaders = {};
 
-ShaderLibs.shaders.copyVert = "#define GLSLIFY 1\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
+ShaderLibs.shaders.copyVert = "#define GLSLIFY 1\n\n#define SHADER_NAME BASIC_VERTEXXXX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n\nvarying vec2 vTextureCoord;\n\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
 
-ShaderLibs.shaders.generalVert = "#define GLSLIFY 1\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    vec3 pos = aVertexPosition;\n    pos *= scale;\n    pos += position;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
+ShaderLibs.shaders.generalVert = "#define GLSLIFY 1\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    vec3 pos = aVertexPosition;\n    pos *= scale;\n    pos += position;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
 
-ShaderLibs.shaders.copyFrag = "#define GLSLIFY 1\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n}";
+ShaderLibs.shaders.copyFrag = "#define GLSLIFY 1\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n}";
 
-ShaderLibs.shaders.alphaFrag = "#define GLSLIFY 1\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n    gl_FragColor.a *= opacity;\n}";
+ShaderLibs.shaders.alphaFrag = "#define GLSLIFY 1\n\n#define SHADER_NAME TEXTURE_WITH_ALPHA\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n    gl_FragColor.a *= opacity;\n}";
 
-ShaderLibs.shaders.simpleColorFrag = "#define GLSLIFY 1\n\nprecision highp float;\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}";
+ShaderLibs.shaders.simpleColorFrag = "#define GLSLIFY 1\n\n#define SHADER_NAME SIMPLE_COLOR_FRAGMENT\n\nprecision highp float;\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}";
 
 ShaderLibs.shaders.depthFrag = "#define GLSLIFY 1\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float n;\nuniform float f;\n\nfloat getDepth(float z) {\n\treturn (6.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    float r = texture2D(texture, vTextureCoord).r;\n    float grey = getDepth(r);\n    gl_FragColor = vec4(grey, grey, grey, 1.0);\n}";
 
@@ -12330,7 +12370,7 @@ var EaseNumber = _dereq_("./EaseNumber");
 var SimpleCamera = function(mListenerTarget) {
 	this._listenerTarget = mListenerTarget || window;
 	CameraPerspective.call(this);
-	this._isLocked = false;
+	// this._isLocked = false;
 	this._init();
 };
 
@@ -12352,7 +12392,8 @@ p._init = function() {
 	this._ry             = new EaseNumber(0);
 	this._preRX          = 0;
 	this._preRY          = 0;
-	this._isLocked       = false;
+	// this._isLocked       = false;
+	this._isLockZoom 	 = false;
 	this._isLockRotation = false;
 	this._isInvert       = false;
 
@@ -12377,9 +12418,12 @@ p.inverseControl = function(value) {
 
 p.lock = function(value) {
 	if(value === undefined) {
-		this._isLocked = true;
+		// this._isLocked = true;
+		this._isLockZoom = true;
+		this._isLockRotation = true;
 	} else {
-		this._isLocked = value;
+		this._isLockZoom = value;
+		this._isLockRotation = value;
 	}
 };
 
@@ -12391,8 +12435,12 @@ p.lockRotation = function(value) {
 	}
 };
 
+p.lockZoom = function(value) {
+	this._isLockZoom = value === undefined ? true : value;
+};
+
 p._onMouseDown = function(mEvent) {
-	if(this._isLockRotation || this._isLocked) {return;}
+	if(this._isLockRotation) {return;}
 	this._isMouseDown = true;
 	getMouse(mEvent, this._mouse);
 	getMouse(mEvent, this._preMouse);
@@ -12402,7 +12450,7 @@ p._onMouseDown = function(mEvent) {
 
 
 p._onMouseMove = function(mEvent) {
-	if(this._isLockRotation || this._isLocked) {return;}
+	if(this._isLockRotation) {return;}
 	getMouse(mEvent, this._mouse);
 	if(mEvent.touches) {mEvent.preventDefault();}
 	if(this._isMouseDown) {
@@ -12414,20 +12462,20 @@ p._onMouseMove = function(mEvent) {
 		if(this._isInvert) {diffY *= -1;}
 		this._rx.value = this._preRX - diffY * 0.01;
 
-		if(this._rx.targetValue > Math.PI * 0.5) {this._rx.targetValue = Math;	}
+		// if(this._rx.targetValue > Math.PI * 0.5) {this._rx.targetValue = Math;	}
 	}
 };
 
 
 p._onMouseUp = function() {
-	if(this._isLockRotation || this._isLocked) {return;}
+	if(this._isLockRotation) {return;}
 	this._isMouseDown = false;
 	// getMouse(mEvent, this._mouse);
 };
 
 
 p._onWheel = function(aEvent) {
-	if(this._isLocked) {	return;	}
+	if(this._isLockZoom) {	return;	}
 	var w = aEvent.wheelDelta;
 	var d = aEvent.detail;
 	var value = 0;
@@ -12654,6 +12702,7 @@ var ViewCopy = function(aPathVert, aPathFrag) {
 var p = ViewCopy.prototype = new View();
 
 p._init = function() {
+	if(!GL.gl) { return;	}
 	this.mesh = MeshUtils.createPlane(2, 2, 1);
 };
 
@@ -12661,6 +12710,7 @@ p.render = function(aTexture) {
 	if(!this.shader.isReady()) {return;}
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
+	// console.log('Render', aTexture);
 	aTexture.bind(0);
 	GL.draw(this.mesh);
 };
@@ -15190,6 +15240,10 @@ p.limit = function(mMin, mMax) {
 	this._checkLimit();
 };
 
+p.setEasing = function(mValue) {
+	this._easing = mValue;
+};
+
 p._checkLimit = function() {
 	if(this._min !== undefined && this._targetValue < this._min) {
 		this._targetValue = this._min;
@@ -15310,7 +15364,7 @@ p._init = function() {
 	if(GL.depthTextureExt) {
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.FLOAT, null);
 	} else {
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.FLOAT, null);
 	}
 	
 	// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer.width, this.frameBuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -15330,13 +15384,15 @@ p._init = function() {
 	if(GL.depthTextureExt === null) {
 		var renderbuffer = gl.createRenderbuffer();
 		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-		// gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.frameBuffer.width, this.frameBuffer.height);
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.frameBuffer.width, this.frameBuffer.height);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
+    	gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
 		// gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);	
 		// if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
 	 //      throw new Error('Rendering to this texture is not supported (incomplete framebuffer)');
 	 //    }
 
-	 	gl.renderbufferStorage( gl.RENDERBUFFER, gl.RGBA4, this.frameBuffer.width, this.frameBuffer.height );
+	 	// gl.renderbufferStorage( gl.RENDERBUFFER, gl.RGBA4, this.frameBuffer.width, this.frameBuffer.height );
 	} else {
 		this.depthTexture       = gl.createTexture();
 		this.glDepthTexture		= new GLTexture(this.depthTexture, true);
@@ -15394,6 +15450,14 @@ module.exports = FrameBuffer;
 var GL = _dereq_("./GLTools");
 var gl;
 var ShaderLibs = _dereq_("./ShaderLibs");
+
+var addLineNumbers = function ( string ) {
+	var lines = string.split( '\n' );
+	for ( var i = 0; i < lines.length; i ++ ) {
+		lines[ i ] = ( i + 1 ) + ': ' + lines[ i ];
+	}
+	return lines.join( '\n' );
+};
 
 var GLShader = function(aVertexShaderId, aFragmentShaderId) {
 	gl              	 = GL.gl;
@@ -15464,7 +15528,7 @@ p.createVertexShaderProgram = function(aStr) {
 
 	if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 		console.warn("Error in Vertex Shader : ", this.idVertex, ":", gl.getShaderInfoLog(shader));
-		console.log(aStr);
+		console.log(addLineNumbers(aStr));
 		return null;
 	}
 
@@ -15487,7 +15551,7 @@ p.createFragmentShaderProgram = function(aStr) {
 
 	if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 		console.warn("Error in Fragment Shader: ", this.idFragment, ":" , gl.getShaderInfoLog(shader));
-		console.log(aStr);
+		console.log(addLineNumbers(aStr));
 		return null;
 	}
 
@@ -15552,14 +15616,18 @@ p.uniform = function(aName, aType, aValue) {
 		this.shaderProgram[aName] = oUniform.uniformLoc;
 	}
 
-	// console.log('Uniform : ', aName);
 
 	if(aType.indexOf("Matrix") === -1) {
 		if(!hasUniform) {
+			var isArray = Array.isArray(aValue);
+			if(isArray) {
+				this.uniformValues[aName] = aValue.concat();
+			} else {
+				this.uniformValues[aName] = aValue;	
+			}
 			gl[aType](this.shaderProgram[aName], aValue);
-			this.uniformValues[aName] = aValue;
-			// console.debug('Set uniform', aName, aType, aValue);
 		} else {
+			// if(aName == 'position') console.log('Has uniform', this.checkUniform(aName, aType, aValue));
 			if(this.checkUniform(aName, aType, aValue)) {
 				gl[aType](this.shaderProgram[aName], aValue);
 				// console.debug('Set uniform', aName, aType, aValue);
@@ -15568,7 +15636,7 @@ p.uniform = function(aName, aType, aValue) {
 	} else {
 		gl[aType](this.shaderProgram[aName], false, aValue);
 		if(!hasUniform) {
-			gl[aType](this.shaderProgram[aName], aValue);
+			gl[aType](this.shaderProgram[aName], false, aValue);
 			this.uniformValues[aName] = aValue;
 			// console.debug('Set uniform', aName, aType, aValue);
 		}
@@ -15581,6 +15649,7 @@ p.uniform = function(aName, aType, aValue) {
 };
 
 p.checkUniform = function(aName, aType, aValue) {
+	var isArray = Array.isArray(aValue);
 
 	if(!this.uniformValues[aName]) {
 		this.uniformValues[aName] = aValue;
@@ -15593,13 +15662,30 @@ p.checkUniform = function(aName, aType, aValue) {
 	}
 
 	var uniformValue = this.uniformValues[aName];
-	var hasChanged = !(uniformValue === aValue);
+	var hasChanged = false;
+
+	if(isArray) {
+		for(var i=0; i<uniformValue.length; i++) {
+			if(uniformValue[i] !== aValue[i]) {
+				hasChanged = true;
+				break;
+			}
+		}	
+	} else {
+		hasChanged = uniformValue !== aValue;
+	}
+	
 	
 	if(hasChanged) {
-		this.uniformValues[aName] = aValue;
+		if(isArray) {
+			this.uniformValues[aName] = aValue.concat();
+		} else {
+			this.uniformValues[aName] = aValue;	
+		}
+		
 	}
-	return hasChanged;
 
+	return hasChanged;
 };
 
 
@@ -15744,12 +15830,15 @@ function GLTools() {
 var p = GLTools.prototype;
 
 p.init = function(mCanvas, mWidth, mHeight, parameters) {
-	this.canvas      = mCanvas || document.createElement("canvas");
+	if(this.canvas === null) {
+		this.canvas      = mCanvas || document.createElement("canvas");
+	}
 	var params       = parameters || {};
 	params.antialias = true;
-	this.gl          = this.canvas.getContext("experimental-webgl", params);
 
+	this.gl          = this.canvas.getContext("webgl", params) || this.canvas.getContext("experimental-webgl", params);
 	console.log('GL TOOLS : ', this.gl);
+	
 	
 	if(mWidth !== undefined && mHeight !== undefined) {
 		this.setSize(mWidth, mHeight);
@@ -15764,12 +15853,13 @@ p.init = function(mCanvas, mWidth, mHeight, parameters) {
 	this.gl.clearColor( 0, 0, 0, 1 );
 	this.gl.clearDepth( 1 );
 
-	this.matrix                = glm.mat4.create();
+	this.matrix                 = glm.mat4.create();
 	glm.mat4.identity(this.matrix);
-	this.normalMatrix          = glm.mat3.create();
-	this.depthTextureExt       = this.gl.getExtension("WEBKIT_WEBGL_depth_texture"); // Or browser-appropriate prefix
-	this.floatTextureExt       = this.gl.getExtension("OES_texture_float"); // Or browser-appropriate prefix
-	this.floatTextureLinearExt = this.gl.getExtension("OES_texture_float_linear"); // Or browser-appropriate prefix
+	this.normalMatrix           = glm.mat3.create();
+	this.depthTextureExt        = this.gl.getExtension("WEBKIT_WEBGL_depth_texture"); // Or browser-appropriate prefix
+	this.floatTextureExt        = this.gl.getExtension("OES_texture_float"); // Or browser-appropriate prefix
+	this.floatTextureLinearExt  = this.gl.getExtension("OES_texture_float_linear"); // Or browser-appropriate prefix
+	this.standardDerivativesExt = this.gl.getExtension("OES_standard_derivatives"); // Or browser-appropriate prefix
 
 	this.enabledVertexAttribute = [];
 	this.enableAlphaBlending();
@@ -16674,15 +16764,15 @@ var ShaderLibs = function() { };
 
 ShaderLibs.shaders = {};
 
-ShaderLibs.shaders.copyVert = "#define GLSLIFY 1\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
+ShaderLibs.shaders.copyVert = "#define GLSLIFY 1\n\n#define SHADER_NAME BASIC_VERTEXXXX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n\nvarying vec2 vTextureCoord;\n\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
 
-ShaderLibs.shaders.generalVert = "#define GLSLIFY 1\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    vec3 pos = aVertexPosition;\n    pos *= scale;\n    pos += position;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
+ShaderLibs.shaders.generalVert = "#define GLSLIFY 1\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    vec3 pos = aVertexPosition;\n    pos *= scale;\n    pos += position;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n}";
 
-ShaderLibs.shaders.copyFrag = "#define GLSLIFY 1\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n}";
+ShaderLibs.shaders.copyFrag = "#define GLSLIFY 1\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n}";
 
-ShaderLibs.shaders.alphaFrag = "#define GLSLIFY 1\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n    gl_FragColor.a *= opacity;\n}";
+ShaderLibs.shaders.alphaFrag = "#define GLSLIFY 1\n\n#define SHADER_NAME TEXTURE_WITH_ALPHA\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n    gl_FragColor.a *= opacity;\n}";
 
-ShaderLibs.shaders.simpleColorFrag = "#define GLSLIFY 1\n\nprecision highp float;\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}";
+ShaderLibs.shaders.simpleColorFrag = "#define GLSLIFY 1\n\n#define SHADER_NAME SIMPLE_COLOR_FRAGMENT\n\nprecision highp float;\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}";
 
 ShaderLibs.shaders.depthFrag = "#define GLSLIFY 1\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float n;\nuniform float f;\n\nfloat getDepth(float z) {\n\treturn (6.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    float r = texture2D(texture, vTextureCoord).r;\n    float grey = getDepth(r);\n    gl_FragColor = vec4(grey, grey, grey, 1.0);\n}";
 
@@ -16703,7 +16793,7 @@ var EaseNumber = _dereq_("./EaseNumber");
 var SimpleCamera = function(mListenerTarget) {
 	this._listenerTarget = mListenerTarget || window;
 	CameraPerspective.call(this);
-	this._isLocked = false;
+	// this._isLocked = false;
 	this._init();
 };
 
@@ -16725,7 +16815,8 @@ p._init = function() {
 	this._ry             = new EaseNumber(0);
 	this._preRX          = 0;
 	this._preRY          = 0;
-	this._isLocked       = false;
+	// this._isLocked       = false;
+	this._isLockZoom 	 = false;
 	this._isLockRotation = false;
 	this._isInvert       = false;
 
@@ -16750,9 +16841,12 @@ p.inverseControl = function(value) {
 
 p.lock = function(value) {
 	if(value === undefined) {
-		this._isLocked = true;
+		// this._isLocked = true;
+		this._isLockZoom = true;
+		this._isLockRotation = true;
 	} else {
-		this._isLocked = value;
+		this._isLockZoom = value;
+		this._isLockRotation = value;
 	}
 };
 
@@ -16764,8 +16858,12 @@ p.lockRotation = function(value) {
 	}
 };
 
+p.lockZoom = function(value) {
+	this._isLockZoom = value === undefined ? true : value;
+};
+
 p._onMouseDown = function(mEvent) {
-	if(this._isLockRotation || this._isLocked) {return;}
+	if(this._isLockRotation) {return;}
 	this._isMouseDown = true;
 	getMouse(mEvent, this._mouse);
 	getMouse(mEvent, this._preMouse);
@@ -16775,7 +16873,7 @@ p._onMouseDown = function(mEvent) {
 
 
 p._onMouseMove = function(mEvent) {
-	if(this._isLockRotation || this._isLocked) {return;}
+	if(this._isLockRotation) {return;}
 	getMouse(mEvent, this._mouse);
 	if(mEvent.touches) {mEvent.preventDefault();}
 	if(this._isMouseDown) {
@@ -16787,20 +16885,20 @@ p._onMouseMove = function(mEvent) {
 		if(this._isInvert) {diffY *= -1;}
 		this._rx.value = this._preRX - diffY * 0.01;
 
-		if(this._rx.targetValue > Math.PI * 0.5) {this._rx.targetValue = Math;	}
+		// if(this._rx.targetValue > Math.PI * 0.5) {this._rx.targetValue = Math;	}
 	}
 };
 
 
 p._onMouseUp = function() {
-	if(this._isLockRotation || this._isLocked) {return;}
+	if(this._isLockRotation) {return;}
 	this._isMouseDown = false;
 	// getMouse(mEvent, this._mouse);
 };
 
 
 p._onWheel = function(aEvent) {
-	if(this._isLocked) {	return;	}
+	if(this._isLockZoom) {	return;	}
 	var w = aEvent.wheelDelta;
 	var d = aEvent.detail;
 	var value = 0;
@@ -17027,6 +17125,7 @@ var ViewCopy = function(aPathVert, aPathFrag) {
 var p = ViewCopy.prototype = new View();
 
 p._init = function() {
+	if(!GL.gl) { return;	}
 	this.mesh = MeshUtils.createPlane(2, 2, 1);
 };
 
@@ -17034,6 +17133,7 @@ p.render = function(aTexture) {
 	if(!this.shader.isReady()) {return;}
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
+	// console.log('Render', aTexture);
 	aTexture.bind(0);
 	GL.draw(this.mesh);
 };

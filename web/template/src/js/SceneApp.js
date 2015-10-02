@@ -8,10 +8,6 @@ var ViewSimulation = require("./ViewSimulation");
 
 function SceneApp() {
 	gl = GL.gl;
-	this.sum = 0;
-	this.frame = 0;
-	this.percent = 0;
-	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	bongiovi.Scene.call(this);
 
 	window.addEventListener("resize", this.resize.bind(this));
@@ -21,7 +17,8 @@ function SceneApp() {
 
 	this.camera._rx.value = -.3;
 	this.camera._ry.value = -.1;
-	this.camera.radius.value = 1100;
+
+	this.count = 0;
 
 	this.resize();
 }
@@ -85,18 +82,18 @@ p.updateFbo = function() {
 
 
 p.render = function() {
-	if(this.frame%params.skipCount == 0) {
-		this.frame = 0;
+	if(this.count % params.skipCount == 0) {
+		this.count = 0;
 		this.updateFbo();
 	}
-	this.percent = this.frame/params.skipCount;
-	this.frame++;
+	
+	var percent = this.count / params.skipCount;
+	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
-	this._getSoundData();
 	
 	this._vAxis.render();
 	this._vDotPlane.render();
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), this.percent);
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -106,38 +103,6 @@ p.render = function() {
 	// this._vCopy.render(this._fboCurrent.getTexture());
 };
 
-
-
-p._getSoundData = function() {
-	if(this.analyser) {
-		this.frequencies = this.analyser.getFrequencies();
-	} else {
-		return;
-	}
-
-	var f = this.analyser.getFrequencies();
-
-	var sum = 0;
-
-	for(var i=0; i<f.length; i++) {
-		var index = i * 4;
-		sum += f[i];
-	}
-
-	sum /= f.length;
-	var threshold = 10;
-	var maxSpeed = 2.0;
-
-	if(sum > threshold) {
-		this.sum += sum * 1.5;
-		this.easeSum.value = Math.min(this.sum, maxSpeed) * .1;
-	} else {
-		this.easeSum.value = 0;
-	}
-
-	this.sum -= this.sum * .1;
-	if(this.sum < 0) this.sum = 0;
-};
 
 p.resize = function() {
 	var scale = 1.0;

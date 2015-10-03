@@ -1,6 +1,7 @@
 // SceneApp.js
 
 var GL = bongiovi.GL, gl;
+<<<<<<< HEAD
 var SoundCloudLoader = require("./SoundCloudLoader");
 var ViewSave = require("./ViewSave");
 var ViewRender = require("./ViewRender");
@@ -24,11 +25,20 @@ function SceneApp() {
 	this.camera._ry.value = -.1;
 
 	this.resize();
+=======
+
+function SceneApp() {
+	gl = GL.gl;
+	bongiovi.Scene.call(this);
+
+	window.addEventListener("resize", this.resize.bind(this));
+>>>>>>> origin/develop
 }
 
 
 var p = SceneApp.prototype = new bongiovi.Scene();
 
+<<<<<<< HEAD
 p._initSound = function() {
 	var that = this;
 	this.soundOffset = 0;
@@ -62,10 +72,15 @@ p._initTextures = function() {
 	this.fboRender.bind();
 	GL.clear(0, 0, 0, 0);
 	this.fboRender.unbind();
+=======
+p._initTextures = function() {
+	console.log('Init Textures');
+>>>>>>> origin/develop
 };
 
 p._initViews = function() {
 	console.log('Init Views');
+<<<<<<< HEAD
 	this._vAxis     = new bongiovi.ViewAxis();
 	this._vDotPlane = new bongiovi.ViewDotPlane();
 	this._vSave     = new ViewSave();
@@ -184,3 +199,20 @@ module.exports = SceneApp;
 
 
 // <iframe width="100%" height="450" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/188056255&amp;auto_play=false&amp;hide_related=false&amp;show_comments=true&amp;show_user=true&amp;show_reposts=false&amp;visual=true"></iframe>
+=======
+	this._vAxis = new bongiovi.ViewAxis();
+	this._vDotPlane = new bongiovi.ViewDotPlane();
+};
+
+p.render = function() {
+	this._vAxis.render();
+	this._vDotPlane.render();
+};
+
+p.resize = function() {
+	GL.setSize(window.innerWidth, window.innerHeight);
+	this.camera.resize(GL.aspectRatio);
+};
+
+module.exports = SceneApp;
+>>>>>>> origin/develop

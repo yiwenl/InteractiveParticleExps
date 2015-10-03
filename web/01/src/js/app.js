@@ -1,6 +1,12 @@
 // app.js
 window.bongiovi = require("./libs/bongiovi.js");
+window.Sono     = require("./libs/sono.min.js");
 var dat = require("dat-gui");
+
+window.params = {
+	numParticles:512*2,
+	skipCount:10
+};
 
 (function() {
 	var SceneApp = require("./SceneApp");
@@ -26,10 +32,15 @@ var dat = require("dat-gui");
 		bongiovi.Scheduler.addEF(this, this._loop);
 
 		// this.gui = new dat.GUI({width:300});
+
+
+		this.stats = new Stats();
+		document.body.appendChild(this.stats.domElement);
 	};
 
 	p._loop = function() {
 		this._scene.loop();
+		this.stats.update();
 	};
 
 })();

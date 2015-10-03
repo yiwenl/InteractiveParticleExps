@@ -2,6 +2,7 @@
 
 var GL = bongiovi.GL;
 var gl;
+var glm = bongiovi.glm;
 var glslify = require("glslify");
 var random = function(min, max) { return min + Math.random() * (max - min);	};
 
@@ -27,9 +28,15 @@ p._init = function() {
 	var ux, uy;
 	var range = 100.0;
 
+
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {
-			positions.push([random(-range, range), random(-range, range), random(-range, range)]);
+
+			var pos = vec3.fromValues(random(-1, 1), random(-1, 1), random(-1, 1));
+			vec3.normalize(pos, pos);
+			vec3.scale(pos, pos, range*Math.random());
+			// positions.push([random(-range, range), random(-range, range), random(-range, range)]);
+			positions.push(pos);
 
 			ux = i/numParticles-1.0;
 			uy = j/numParticles-1.0;

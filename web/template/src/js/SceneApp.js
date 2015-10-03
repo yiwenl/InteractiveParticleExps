@@ -91,7 +91,7 @@ p.render = function() {
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
 	
-	this._vAxis.render();
+	// this._vAxis.render();
 	this._vDotPlane.render();
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
 
@@ -105,8 +105,9 @@ p.render = function() {
 
 
 p.resize = function() {
-	var scale = 1.0;
-	GL.setSize(window.innerWidth*scale, window.innerHeight*scale);
+	var scale = 1.5;
+	var W = Math.min(1920 * scale, window.innerWidth * scale);
+	GL.setSize(W, W*window.innerHeight/window.innerWidth);
 	this.camera.resize(GL.aspectRatio);
 };
 

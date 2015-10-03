@@ -79,12 +79,41 @@ uniform float time;
 void main(void) {
     if(vTextureCoord.y < .5) {
 		if(vTextureCoord.x < .5) {
+			vec2 uvVel = vTextureCoord + vec2(.5, .0);
 			vec3 pos = texture2D(texture, vTextureCoord).rgb;
+			vec3 vel = texture2D(texture, uvVel).rgb;
+			pos += vel;
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
-			gl_FragColor = vec4(0.0);	
+			vec2 uvPos = vTextureCoord - vec2(.5, .0);
+			vec3 pos = texture2D(texture, uvPos).rgb;
+			vec3 vel = texture2D(texture, vTextureCoord).rgb;
+
+			const float posOffset = .01;
+			// float ax = snoise(pos.x * posOffset + time, pos.y * posOffset + time, pos.z * posOffset + time);
+			// float ay = snoise(pos.y * posOffset + time, pos.z * posOffset + time, pos.x * posOffset + time);
+			// float az = snoise(pos.z * posOffset + time, pos.x * posOffset + time, pos.y * posOffset + time);
+
+			float ax = snoise(pos.x * posOffset + time, pos.y * posOffset, pos.z * posOffset);
+			float ay = snoise(pos.y * posOffset, pos.z * posOffset + time, pos.x * posOffset);
+			float az = snoise(pos.z * posOffset, pos.x * posOffset, pos.y * posOffset + time);
+
+			vel += vec3(ax, ay, az) * .1;
+
+			const float maxRadius = 100.0;
+			const float gravity = .01;
+			float distToCenter = length(pos);
+			if( distToCenter > maxRadius) {
+				vec3 dir = normalize(pos);
+				vel -= dir * (distToCenter - maxRadius) * gravity;
+			}
+
+			
+			vel *= .97;
+
+			gl_FragColor = vec4(vel, 1.0);	
 		}
     } else {
-    	gl_FragColor = vec4(0.0);
+    	gl_FragColor = texture2D(texture, vTextureCoord);
     }
 }

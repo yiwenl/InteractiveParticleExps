@@ -26,7 +26,7 @@ p._init = function() {
 	var totalParticles = numParticles * numParticles;
 	console.log('Total Particles : ', totalParticles);
 	var ux, uy;
-	var range = 1;
+	var range = 100;
 
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {

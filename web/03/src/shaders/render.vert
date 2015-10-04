@@ -10,6 +10,7 @@ uniform sampler2D texture;
 uniform sampler2D textureNext;
 uniform sampler2D texturePortrait;
 uniform vec2 dimension;
+uniform float progress;
 uniform float percent;
 varying vec2 vTextureCoord;
 varying vec4 vColor;
@@ -47,4 +48,11 @@ void main(void) {
     vec3 color = mix(colorPortrait.rgb, vec3(1.0), .2);
 
     vColor = vec4(color, 1.0);
+
+    const float numParticles = 128.0;
+    float uvx = (aTextureCoord.x - .5)/.5;
+	float prog = aTextureCoord.y * numParticles + uvx; 
+	if( prog > progress) {
+		vColor = vec4(.0);
+	}
 }

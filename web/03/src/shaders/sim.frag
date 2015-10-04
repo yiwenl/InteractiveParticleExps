@@ -100,7 +100,7 @@ void main(void) {
 			pos += vel;
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
-			float uvx = (vTextureCoord.x - .5)/.5 * numParticles;
+			float uvx = (vTextureCoord.x - .5)/.5;
 			float prog = vTextureCoord.y * numParticles +uvx; 
 
 

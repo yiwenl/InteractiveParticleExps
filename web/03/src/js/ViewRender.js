@@ -37,7 +37,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(texture, textureNext, percent, texturePortrait) {
+p.render = function(texture, textureNext, percent, texturePortrait, progress) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -47,6 +47,7 @@ p.render = function(texture, textureNext, percent, texturePortrait) {
 	this.shader.uniform("texturePortrait", "uniform1i", 2);
 	texturePortrait.bind(2);
 	this.shader.uniform("percent", "uniform1f", percent);
+	this.shader.uniform("progress", "uniform1f", progress);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
 	GL.draw(this.mesh);
 };

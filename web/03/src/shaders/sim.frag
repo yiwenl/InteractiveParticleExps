@@ -2,6 +2,10 @@
 
 precision mediump float;
 uniform sampler2D texture;
+uniform sampler2D texturePortrait;
+uniform vec2 dimension;
+uniform vec3 center;
+uniform float progress;
 varying vec2 vTextureCoord;
 
 
@@ -70,7 +74,7 @@ float snoise(float x, float y, float z){
 }
 
 float rand(vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+	return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
 
@@ -85,9 +89,10 @@ const float numParticles = width;
 
 void main(void) {
 	vec2 resolution = vec2(numParticles*2.0, numParticles*2.0);
-    vec2 uv = gl_FragCoord.xy / resolution.xy;
+	vec2 uv = gl_FragCoord.xy / resolution.xy;
+	float maxLength = length(vec3(1.0));
 
-    if(vTextureCoord.y < .5) {
+	if(vTextureCoord.y < .5) {
 		if(vTextureCoord.x < .5) {
 			vec2 uvVel = vTextureCoord + vec2(.5, .0);
 			vec3 pos = texture2D(texture, vTextureCoord).rgb;
@@ -95,49 +100,69 @@ void main(void) {
 			pos += vel;
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
-			vec2 uvPos = vTextureCoord - vec2(.5, .0);
-			vec3 pos = texture2D(texture, uvPos).rgb;
-			vec3 vel = texture2D(texture, vTextureCoord).rgb;
-			vec2 uvPosParticle, uvVelParticle;
-            vec3 dir, posParticle, velParticle;
-            float dist, f;
-            const float minRadius = 10.0;
+			float uvx = (vTextureCoord.x - .5)/.5 * numParticles;
+			float prog = vTextureCoord.y * numParticles +uvx; 
 
-			for (float y=0.0;y<height;y++) {
-                for (float x=0.0;x<width;x++) {
-                    if( (x+numParticles) == gl_FragCoord.x && y == gl_FragCoord.y) continue;
 
-                    uvPosParticle = vec2(x/resolution.x, y/resolution.y);
-                    posParticle = texture2D(texture, uvPosParticle).rgb;
-                    dist = distance(pos, posParticle);
-                    if(dist < minRadius) {
-                    	dir = normalize(pos-posParticle);
-                    	// f = (1.0 - dist/minRadius) * .2;
-                    	f = 1.0/ (dist/minRadius) * .1;
-                    	vel += dir * f;
-                    }
-                }
-            }
-			
-			vel *= .915;
+			if( prog <= progress) {
+				vec2 uvPos = vTextureCoord - vec2(.5, .0);
+				vec3 pos = texture2D(texture, uvPos).rgb;
+				vec3 vel = texture2D(texture, vTextureCoord).rgb;
+				vec2 uvPosParticle, uvVelParticle;
+				vec3 dir, posParticle, velParticle;
+				float dist, f;
+				const float minRadius = 10.0;
 
-			vec2 mouse = vec2(cx, cy);
-			float distToMouse = distance(pos.xy, mouse);
-			if(distToMouse < radius) {
-				vec2 dir = normalize(pos.xy - mouse);
-				// float f = (1.0 - distToMouse/radius) * .5;
-				float f = 1.0 / (distToMouse/radius) * .2;
-				vel.xy += dir * f;
+				const float speedIncrease = .5;
+				float maxSpeed = 3.0;
+
+				for (float y=0.0;y<height;y++) {
+					for (float x=0.0;x<width;x++) {
+						if( (x+numParticles) == gl_FragCoord.x && y == gl_FragCoord.y) continue;
+						// if(pIndex == currentIndex) continue;
+						uvPosParticle = vec2(x/resolution.x, y/resolution.y);
+						posParticle = texture2D(texture, uvPosParticle).rgb;
+						dist = distance(pos, posParticle);
+
+						vec2 uvPortrait = posParticle.xy / dimension;
+						uvPortrait.y = 1.0 - uvPortrait.y;
+						vec3 colorPortrait = texture2D(texturePortrait, uvPortrait).rgb;
+						float p = 1.0 - length(colorPortrait)/length(vec3(1.0));
+						// float p = length(colorPortrait)/length(vec3(1.0));
+
+						float r = minRadius * p * .5 + minRadius;
+
+						if(dist < r) {
+							dir = normalize(pos-posParticle);
+							f = 1.0/ (dist/r) * .1;
+							vel += dir * f;
+						}   
+					}
+				}
+				
+				vel *= .92;
+
+				vec2 mouse = vec2(cx, cy);
+				float distToMouse = distance(pos.xy, mouse);
+				if(distToMouse < radius) {
+					vec2 dir = normalize(pos.xy - mouse);
+					// float f = (1.0 - distToMouse/radius) * .5;
+					float f = 1.0 / (distToMouse/radius) * .2;
+					vel.xy += dir * f;
+				}
+
+				maxSpeed = min(3.0, maxSpeed);
+				if(length(vel) > maxSpeed) {
+					vel = normalize(vel) * maxSpeed;
+				}
+
+				gl_FragColor = vec4(vel, 1.0); 
+			} else {
+				gl_FragColor = texture2D(texture, vTextureCoord);
 			}
-
-			const float maxSpeed = 2.0;
-			if(length(vel) > maxSpeed) {
-				vel = normalize(vel) * maxSpeed;
-			}
-
-			gl_FragColor = vec4(vel, 1.0);	
+			 
 		}
-    } else {
-    	gl_FragColor = texture2D(texture, vTextureCoord);
-    }
+	} else {
+		gl_FragColor = texture2D(texture, vTextureCoord);
+	}
 }

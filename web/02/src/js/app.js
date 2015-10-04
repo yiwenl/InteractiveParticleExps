@@ -1,6 +1,12 @@
 // app.js
 window.bongiovi = require("./libs/bongiovi.js");
-var dat = require("dat-gui");
+// window.Sono     = require("./libs/sono.min.js");
+// var dat = require("dat-gui");
+
+window.params = {
+	skipCount:2,
+	numParticles:64*2
+};
 
 (function() {
 	var SceneApp = require("./SceneApp");

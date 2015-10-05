@@ -24,11 +24,10 @@ p.render = function(texture, x, y, radius, textureWave) {
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("textureWave", "uniform1i", 1);
 	this.shader.uniform("time", "uniform1f", this._count);
-	this.shader.uniform("cx", "uniform1f", x);
-	this.shader.uniform("cy", "uniform1f", y);
 	this.shader.uniform("radius", "uniform1f", radius);
 	this.shader.uniform("aspectRatio", "uniform1f", GL.aspectRatio);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
+	this.shader.uniform("center", "uniform3fv", [GL.width/2, GL.height/2, .0]);
 	texture.bind(0);
 	textureWave.bind(1);
 	GL.draw(this.mesh);

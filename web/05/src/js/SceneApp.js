@@ -176,16 +176,16 @@ p.render = function() {
 	this._vRipple.render(this.waves);
 	this._fboRipple.unbind();
 
-	// GL.setViewport(0, 0, GL.width, GL.height);
-	// gl.disable(gl.DEPTH_TEST);
-	// this._vCopy.render(this._fboRipple.getTexture());
-	// gl.enable(gl.DEPTH_TEST);
+	GL.setViewport(0, 0, GL.width, GL.height);
+	gl.disable(gl.DEPTH_TEST);
+	this._vCopy.render(this._fboRipple.getTexture());
+	gl.enable(gl.DEPTH_TEST);
 };
 
 p._onBeat = function(e) {
 	var wh = Math.min(e.detail.value, 50.0)/50.0;
 	var r = .2;
-	var w = new Wave([.5 + random(-r, r), .5 + random(-r, r)], wh*.5 + .5);
+	var w = new Wave([.5 + random(-r, r), .5 + random(-r, r)], wh*.5 + .5, wh);
 	// var w = new Wave([.5, .5], wh*.5 + .5);
 	this.waves.push(w);
 	if(this.waves.length > params.numWaves) this.waves.shift();
@@ -193,13 +193,12 @@ p._onBeat = function(e) {
 
 
 p.resize = function() {
-	var scale = 1;
-	var W = Math.min(1920 * scale, window.innerWidth * scale);
-	GL.setSize(W, W*window.innerHeight/window.innerWidth);
-	this.camera.resize(GL.aspectRatio);
-
 	var W = window.innerWidth;
 	var H = window.innerHeight;
+
+	GL.setSize(W, H);
+	this.camera.resize(GL.aspectRatio);
+
 	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 };
 

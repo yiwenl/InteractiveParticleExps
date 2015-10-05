@@ -395,16 +395,16 @@ p.render = function() {
 	this._vRipple.render(this.waves);
 	this._fboRipple.unbind();
 
-	// GL.setViewport(0, 0, GL.width, GL.height);
-	// gl.disable(gl.DEPTH_TEST);
-	// this._vCopy.render(this._fboRipple.getTexture());
-	// gl.enable(gl.DEPTH_TEST);
+	GL.setViewport(0, 0, GL.width, GL.height);
+	gl.disable(gl.DEPTH_TEST);
+	this._vCopy.render(this._fboRipple.getTexture());
+	gl.enable(gl.DEPTH_TEST);
 };
 
 p._onBeat = function(e) {
 	var wh = Math.min(e.detail.value, 50.0)/50.0;
 	var r = .2;
-	var w = new Wave([.5 + random(-r, r), .5 + random(-r, r)], wh*.5 + .5);
+	var w = new Wave([.5 + random(-r, r), .5 + random(-r, r)], wh*.5 + .5, wh);
 	// var w = new Wave([.5, .5], wh*.5 + .5);
 	this.waves.push(w);
 	if(this.waves.length > params.numWaves) this.waves.shift();
@@ -412,13 +412,12 @@ p._onBeat = function(e) {
 
 
 p.resize = function() {
-	var scale = 1;
-	var W = Math.min(1920 * scale, window.innerWidth * scale);
-	GL.setSize(W, W*window.innerHeight/window.innerWidth);
-	this.camera.resize(GL.aspectRatio);
-
 	var W = window.innerWidth;
 	var H = window.innerHeight;
+
+	GL.setSize(W, H);
+	this.camera.resize(GL.aspectRatio);
+
 	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 };
 
@@ -604,7 +603,7 @@ var gl;
 
 function ViewSimulation() {
 	this._count = Math.random() * 0xFF;
-	bongiovi.View.call(this, null, "#define GLSLIFY 1\n// sim.frag\n\nprecision mediump float;\nuniform sampler2D texture;\nuniform sampler2D textureWave;\nuniform vec2 dimension;\nuniform vec3 center;\nuniform float progress;\nvarying vec2 vTextureCoord;\n\nuniform float time;\nuniform float cx;\nuniform float cy;\nuniform float radius;\nuniform float aspectRatio;\n\nconst float width = 64.0 * 1.0;\nconst float height = width;\nconst float numParticles = width;\n\nvoid main(void) {\n\tvec2 resolution = vec2(numParticles*2.0, numParticles*2.0);\n\tvec2 uv = gl_FragCoord.xy / resolution.xy;\n\tfloat maxLength = length(vec3(1.0));\n\n\tif(vTextureCoord.y < .5) {\n\t\tif(vTextureCoord.x < .5) {\n\t\t\tvec2 uvVel = vTextureCoord + vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 vel = texture2D(texture, uvVel).rgb;\n\t\t\tpos += vel;\n\t\t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\tvec2 uvPos = vTextureCoord - vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, uvPos).rgb;\n\t\t\tvec3 vel = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec2 uvPosParticle, uvVelParticle;\n\t\t\tvec3 dir, posParticle, velParticle;\n\t\t\tfloat dist, f;\n\n\t\t\tconst float minRadius = 20.0;\n\t\t\tconst float speedIncrease = .5;\n\t\t\tconst float maxSpeed = 3.0;\n\n\t\t\t\n\n\t\t\tfor (float y=0.0;y<height;y++) {\n\t\t\t\tfor (float x=0.0;x<width;x++) {\n\t\t\t\t\tif( (x+numParticles) == gl_FragCoord.x && y == gl_FragCoord.y) continue;\n\t\t\t\t\t// if(pIndex == currentIndex) continue;\n\t\t\t\t\tuvPosParticle = vec2(x/resolution.x, y/resolution.y);\n\t\t\t\t\tposParticle = texture2D(texture, uvPosParticle).rgb;\n\t\t\t\t\tdist = distance(pos, posParticle);\n\n\t\t\t\t\tvec2 uvWave = posParticle.xy / dimension;\n\t\t\t\t\tuvWave.y = 1.0 - uvWave.y;\n\t\t\t\t\tfloat waveHeight = texture2D(textureWave, uvWave).r;\n\t\t\t\t\twaveHeight = mix(waveHeight, 1.0, .5);\n\t\t\t\t\tfloat r = 5.0 + waveHeight * minRadius;\n\n\t\t\t\t\tif(dist < r) {\n\t\t\t\t\t\tdir = normalize(pos-posParticle);\n\t\t\t\t\t\tf = 1.0/ (dist/r) * .1;\n\t\t\t\t\t\tvel += dir * f;\n\t\t\t\t\t}   \n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\tvel *= .92;\n\n\t\t\tvec2 mouse = vec2(cx, cy);\n\t\t\tfloat distToMouse = distance(pos.xy, mouse);\n\t\t\tif(distToMouse < radius) {\n\t\t\t\tvec2 dir = normalize(pos.xy - mouse);\n\t\t\t\t// float f = (1.0 - distToMouse/radius) * .5;\n\t\t\t\tfloat f = 1.0 / (distToMouse/radius) * .2;\n\t\t\t\tvel.xy += dir * f;\n\t\t\t}\n\n\t\t\t// maxSpeed = min(3.0, maxSpeed);\n\t\t\tif(length(vel) > maxSpeed) {\n\t\t\t\tvel = normalize(vel) * maxSpeed;\n\t\t\t}\n\n\t\t\tgl_FragColor = vec4(vel, 1.0); \n\t\t\t \n\t\t}\n\t} else {\n\t\tgl_FragColor = texture2D(texture, vTextureCoord);\n\t}\n}");
+	bongiovi.View.call(this, null, "#define GLSLIFY 1\n// sim.frag\n\nprecision mediump float;\nuniform sampler2D texture;\nuniform sampler2D textureWave;\nuniform vec2 dimension;\nuniform vec3 center;\nuniform float progress;\nvarying vec2 vTextureCoord;\n\nuniform float time;\nuniform float radius;\nuniform float aspectRatio;\n\nconst float width = 64.0 * 1.0;\nconst float height = width;\nconst float numParticles = width;\nconst float maxRadius = 500.0;\n\nvoid main(void) {\n\tvec2 resolution = vec2(numParticles*2.0, numParticles*2.0);\n\tvec2 uv = gl_FragCoord.xy / resolution.xy;\n\tfloat maxLength = length(vec3(1.0));\n\n\tif(vTextureCoord.y < .5) {\n\t\tif(vTextureCoord.x < .5) {\n\t\t\tvec2 uvVel = vTextureCoord + vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 vel = texture2D(texture, uvVel).rgb;\n\t\t\tpos += vel;\n\t\t\t// if(distance(pos, center) > maxRadius) pos = vec3(center);\n\t\t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\tvec2 uvPos = vTextureCoord - vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, uvPos).rgb;\n\t\t\tvec3 vel = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec2 uvPosParticle, uvVelParticle;\n\t\t\tvec3 dir, posParticle, velParticle;\n\t\t\tfloat dist, f;\n\n\t\t\tconst float minRadius = 30.0;\n\t\t\tconst float speedIncrease = .5;\n\t\t\tconst float maxSpeed = 3.0;\n\n\t\t\t\n\n\t\t\tfor (float y=0.0;y<height;y++) {\n\t\t\t\tfor (float x=0.0;x<width;x++) {\n\t\t\t\t\tif( (x+numParticles) == gl_FragCoord.x && y == gl_FragCoord.y) continue;\n\t\t\t\t\t// if(pIndex == currentIndex) continue;\n\t\t\t\t\tuvPosParticle = vec2(x/resolution.x, y/resolution.y);\n\t\t\t\t\tposParticle = texture2D(texture, uvPosParticle).rgb;\n\t\t\t\t\tdist = distance(pos, posParticle);\n\n\t\t\t\t\tvec2 uvWave = posParticle.xy / dimension;\n\t\t\t\t\tuvWave.y = 1.0 - uvWave.y;\n\t\t\t\t\tfloat waveHeight = texture2D(textureWave, uvWave).r;\n\t\t\t\t\twaveHeight = mix(waveHeight, 1.0, .5);\n\t\t\t\t\tfloat r = 5.0 + waveHeight * minRadius;\n\n\t\t\t\t\tif(dist < r) {\n\t\t\t\t\t\tdir = normalize(pos-posParticle);\n\t\t\t\t\t\tf = 1.0/ (dist/r) * .1;\n\t\t\t\t\t\tvel += dir * f;\n\t\t\t\t\t}   \n\t\t\t\t}\n\t\t\t}\n\n\t\t\tfloat distanceToCenter = distance(pos, center);\n\t\t\tif( distanceToCenter > maxRadius) {\n\t\t\t\tvec3 dir = normalize(pos - center);\n\t\t\t\tfloat f = (distanceToCenter-maxRadius) * .1;\n\t\t\t\tvel -= dir * f;\n\t\t\t}\n\t\t\t\n\t\t\tvel *= .92;\n\n\t\t\t// maxSpeed = min(3.0, maxSpeed);\n\t\t\tif(length(vel) > maxSpeed) {\n\t\t\t\tvel = normalize(vel) * maxSpeed;\n\t\t\t}\n\n\t\t\tgl_FragColor = vec4(vel, 1.0); \n\t\t\t \n\t\t}\n\t} else {\n\t\tgl_FragColor = texture2D(texture, vTextureCoord);\n\t}\n}");
 }
 
 var p = ViewSimulation.prototype = new bongiovi.View();
@@ -622,11 +621,10 @@ p.render = function(texture, x, y, radius, textureWave) {
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("textureWave", "uniform1i", 1);
 	this.shader.uniform("time", "uniform1f", this._count);
-	this.shader.uniform("cx", "uniform1f", x);
-	this.shader.uniform("cy", "uniform1f", y);
 	this.shader.uniform("radius", "uniform1f", radius);
 	this.shader.uniform("aspectRatio", "uniform1f", GL.aspectRatio);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
+	this.shader.uniform("center", "uniform3fv", [GL.width/2, GL.height/2, .0]);
 	texture.bind(0);
 	textureWave.bind(1);
 	GL.draw(this.mesh);
@@ -669,13 +667,13 @@ module.exports = ViewSphere;
 
 var random = function(min, max) { return min + Math.random() * (max - min);	}
 
-function Wave(pos, waveHeight) {
+function Wave(pos, waveHeight, p) {
 	this.pos = pos;
 	this.waveFront = 0.0;
 	this.waveHeight = new bongiovi.EaseNumber(waveHeight, random(.01, .005));
 	this.waveHeight.value = .0;
-	this.waveLength = random(.02, .04);
-	this.speed = random(.01, .02) * .1;
+	this.waveLength = random(.02, .04) + p * .01;
+	this.speed = random(.01, .02) * p * .25;
 	var that = this;
 	this.inter = setInterval(function() {
 		that.waveFront += that.speed;

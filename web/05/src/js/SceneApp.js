@@ -132,7 +132,7 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 50.0, this._fboRipple.getTexture());
+	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this._fboRipple.getTexture());
 	this._fboTarget.unbind();
 
 
@@ -177,9 +177,9 @@ p.render = function() {
 	this._fboRipple.unbind();
 
 	GL.setViewport(0, 0, GL.width, GL.height);
-	gl.disable(gl.DEPTH_TEST);
-	this._vCopy.render(this._fboRipple.getTexture());
-	gl.enable(gl.DEPTH_TEST);
+	// gl.disable(gl.DEPTH_TEST);
+	// this._vCopy.render(this._fboRipple.getTexture());
+	// gl.enable(gl.DEPTH_TEST);
 };
 
 p._onBeat = function(e) {

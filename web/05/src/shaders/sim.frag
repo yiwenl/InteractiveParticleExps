@@ -9,6 +9,8 @@ uniform float progress;
 varying vec2 vTextureCoord;
 
 uniform float time;
+uniform float cx;
+uniform float cy;
 uniform float radius;
 uniform float aspectRatio;
 
@@ -74,6 +76,15 @@ void main(void) {
 			}
 			
 			vel *= .92;
+
+			vec2 mouse = vec2(cx, cy);
+				float distToMouse = distance(pos.xy, mouse);
+				if(distToMouse < radius) {
+					vec2 dir = normalize(pos.xy - mouse);
+					// float f = (1.0 - distToMouse/radius) * .5;
+					float f = 1.0 / (distToMouse/radius) * .2;
+					vel.xy += dir * f;
+				}
 
 			// maxSpeed = min(3.0, maxSpeed);
 			if(length(vel) > maxSpeed) {

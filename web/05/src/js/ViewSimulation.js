@@ -14,18 +14,23 @@ p.constructor = ViewSimulation;
 
 
 p._init = function() {
+	// console.log(GL.aspectRatio);
 	this.mesh = bongiovi.MeshUtils.createPlane(2, 2, 1);
 };
 
-p.render = function(texture, center, radius) {
+p.render = function(texture, x, y, radius, textureWave) {
 	if(!this.shader.isReady() ) return;
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
+	this.shader.uniform("textureWave", "uniform1i", 1);
 	this.shader.uniform("time", "uniform1f", this._count);
+	this.shader.uniform("cx", "uniform1f", x);
+	this.shader.uniform("cy", "uniform1f", y);
 	this.shader.uniform("radius", "uniform1f", radius);
+	this.shader.uniform("aspectRatio", "uniform1f", GL.aspectRatio);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
-	this.shader.uniform("center", "uniform3fv", center);
 	texture.bind(0);
+	textureWave.bind(1);
 	GL.draw(this.mesh);
 
 	this._count += .01;

@@ -1,21 +1,25 @@
 // app.js
 window.bongiovi = require("./libs/bongiovi.js");
-// window.Sono     = require("./libs/sono.min.js");
+window.Sono     = require("./libs/sono.min.js");
 // var dat = require("dat-gui");
 
 window.params = {
 	skipCount:2,
-	numParticles:64*2,
+	numParticles:64*1,
 	mouse:false,
-	auto:true,
-	startFromCenter:true
+	auto:false,
+	startFromCenter:true,
+	decrease:.15,
+	decreaseMultiply:.007,
+	minThreshold:4.5,
+	minGap:300,
+	numWaves:20
 };
 
 (function() {
 	var SceneApp = require("./SceneApp");
 
 	App = function() {
-
 		if(document.body) this._init();
 		else {
 			window.addEventListener("load", this._init.bind(this));
@@ -23,6 +27,7 @@ window.params = {
 	}
 
 	var p = App.prototype;
+
 
 	p._init = function() {
 		this.canvas = document.createElement("canvas");

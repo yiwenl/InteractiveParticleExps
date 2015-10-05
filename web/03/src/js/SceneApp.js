@@ -1,27 +1,39 @@
 // SceneApp.js
 
 var GL = bongiovi.GL, gl;
+var glm = bongiovi.glm;
 var SoundCloudLoader = require("./SoundCloudLoader");
 var ViewSave = require("./ViewSave");
 var ViewRender = require("./ViewRender");
 var ViewSimulation = require("./ViewSimulation");
+var ViewSphere = require("./ViewSphere");
+var glm = bongiovi.glm;
 
 function SceneApp() {
 	gl = GL.gl;
-	this.sum = 0;
 	this.frame = 0;
-	this.percent = 0;
-	this.easeSum = new bongiovi.EaseNumber(0, .25);
+	this.progress = 0;
+	this.x = new bongiovi.EaseNumber(-999, .2);
+	this.y = new bongiovi.EaseNumber(-999, .2);
 	bongiovi.Scene.call(this);
 
 	window.addEventListener("resize", this.resize.bind(this));
 
 	this.camera.lockRotation(false);
 	this.sceneRotation.lock(true);
+	this.cameraOthoScreen = new bongiovi.CameraPerspective();
+	var eye            = glm.vec3.clone([0, 0, 500]  );
+	var center         = glm.vec3.create( );
+	var up             = glm.vec3.clone( [0,-1,0] );
+	this.cameraOthoScreen.lookAt(eye, center, up);
+	var W = window.innerWidth;
+	var H = window.innerHeight;
+	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 
-	this.camera._rx.value = -.3;
-	this.camera._ry.value = -.1;
-	this.camera.radius.value = 1100;
+	// this.camera._rx.value = -.3;
+	// this.camera._ry.value = -.1;
+
+	this.count = 0;
 
 	this.resize();
 }
@@ -40,6 +52,8 @@ p._initTextures = function() {
 	}
 	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
+
+	this._texturePortrait = new bongiovi.GLTexture(sourceImage);
 };
 
 p._initViews = function() {
@@ -50,6 +64,7 @@ p._initViews = function() {
 	this._vCopy 	= new bongiovi.ViewCopy();
 	this._vRender 	= new ViewRender();
 	this._vSim 		= new ViewSimulation();
+	this._vSphere 	= new ViewSphere();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -59,17 +74,35 @@ p._initViews = function() {
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	this._vSave.render();
 	this._fboCurrent.unbind();
+
+	var that = this;
+	window.addEventListener('mousemove', function(e) {
+		if(params.mouse) {
+			that.x.value = e.clientX;
+			that.y.value = e.clientY;	
+		}
+		
+	});
 };
 
 
 p.updateFbo = function() {
+	this.frame += .01;
+	this.progress += .1;
+
+	if(params.auto) {
+		this.x.value = Math.cos(this.frame) * window.innerHeight * .25 + window.innerWidth * .5;
+		this.y.value = Math.sin(this.frame) * window.innerHeight * .25 + window.innerHeight * .5;	
+	}
+	
+
 	GL.setMatrices(this.cameraOtho);
 	GL.rotate(this.rotationFront);
 
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture() );
+	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 50.0, this._texturePortrait, this.progress);
 	this._fboTarget.unbind();
 
 
@@ -85,64 +118,36 @@ p.updateFbo = function() {
 
 
 p.render = function() {
-	if(this.frame%params.skipCount == 0) {
-		this.frame = 0;
+	
+
+	if(this.count % params.skipCount == 0) {
+		this.count = 0;
 		this.updateFbo();
 	}
-	this.percent = this.frame/params.skipCount;
-	this.frame++;
-	GL.setViewport(0, 0, GL.width, GL.height);
-	this._getSoundData();
 	
-	this._vAxis.render();
-	this._vDotPlane.render();
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), this.percent);
+	var percent = this.count / params.skipCount;
+	this.count ++;
+	GL.setViewport(0, 0, GL.width, GL.height);
+	
+	// this._vAxis.render();
+	// this._vDotPlane.render();
 
-
-	GL.setMatrices(this.cameraOtho);
-	GL.rotate(this.rotationFront);
-
-	// GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
-	// this._vCopy.render(this._fboCurrent.getTexture());
+	GL.setMatrices(this.cameraOthoScreen);
+	GL.rotate(this.sceneRotation.matrix);
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._texturePortrait, this.progress);
+	this._vSphere.render(this.x.value, this.y.value);
 };
 
-
-
-p._getSoundData = function() {
-	if(this.analyser) {
-		this.frequencies = this.analyser.getFrequencies();
-	} else {
-		return;
-	}
-
-	var f = this.analyser.getFrequencies();
-
-	var sum = 0;
-
-	for(var i=0; i<f.length; i++) {
-		var index = i * 4;
-		sum += f[i];
-	}
-
-	sum /= f.length;
-	var threshold = 10;
-	var maxSpeed = 2.0;
-
-	if(sum > threshold) {
-		this.sum += sum * 1.5;
-		this.easeSum.value = Math.min(this.sum, maxSpeed) * .1;
-	} else {
-		this.easeSum.value = 0;
-	}
-
-	this.sum -= this.sum * .1;
-	if(this.sum < 0) this.sum = 0;
-};
 
 p.resize = function() {
-	var scale = 1.0;
-	GL.setSize(window.innerWidth*scale, window.innerHeight*scale);
+	var scale = 1;
+	var W = Math.min(1920 * scale, window.innerWidth * scale);
+	GL.setSize(W, W*window.innerHeight/window.innerWidth);
 	this.camera.resize(GL.aspectRatio);
+
+	var W = window.innerWidth;
+	var H = window.innerHeight;
+	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 };
 
 module.exports = SceneApp;

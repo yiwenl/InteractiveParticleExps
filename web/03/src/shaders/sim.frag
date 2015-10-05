@@ -83,7 +83,7 @@ uniform float cx;
 uniform float cy;
 uniform float radius;
 
-const float width = 128.0;
+const float width = 100.0;
 const float height = width;
 const float numParticles = width;
 
@@ -111,7 +111,7 @@ void main(void) {
 				vec2 uvPosParticle, uvVelParticle;
 				vec3 dir, posParticle, velParticle;
 				float dist, f;
-				const float minRadius = 10.0;
+				const float minRadius = 6.0;
 
 				const float speedIncrease = .5;
 				float maxSpeed = 3.0;
@@ -130,11 +130,11 @@ void main(void) {
 						float p = 1.0 - length(colorPortrait)/length(vec3(1.0));
 						// float p = length(colorPortrait)/length(vec3(1.0));
 
-						float r = minRadius * p * .5 + minRadius;
+						float r = minRadius;
 
 						if(dist < r) {
 							dir = normalize(pos-posParticle);
-							f = 1.0/ (dist/r) * .1;
+							f = 1.0/ (dist/r) * .15;
 							vel += dir * f;
 						}   
 					}

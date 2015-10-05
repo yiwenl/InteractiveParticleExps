@@ -52,7 +52,6 @@ var p = SceneApp.prototype = new bongiovi.Scene();
 p._initSound = function() {
 	var that = this;
 	this.sound = Sono.load({
-	    // url: ['http://www.bongiovi.tw/codepenAssets/03.mp3'],
 	    url: ['assets/audio/03.mp3'],
 	    // url: ['assets/audio/Oscillate.mp3'],
 	    volume: 1.0,

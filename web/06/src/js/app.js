@@ -13,7 +13,8 @@ window.params = {
 	decreaseMultiply:.007,
 	minThreshold:4.5,
 	minGap:300,
-	numWaves:20
+	numWaves:20,
+	sphereSize:150
 };
 
 (function() {

@@ -29,6 +29,9 @@ void main(void) {
 	vec2 uvVel = uv + vec2(.5, .0);
 	vec3 vel = texture2D(texture, uvVel).rgb;
 
+	vec2 uvDebug = uv + vec2(.0, .5);
+	vec3 debug = texture2D(texture, uvDebug).rgb;
+
 	vec3 posCurr = texture2D(texture, uv).rgb;
 	vec3 posNext = texture2D(textureNext, uv).rgb;
 
@@ -41,7 +44,9 @@ void main(void) {
     // float D = 1.0 - getDepth(V.z/V.w, 5.0, 1000.0);
     float p = length(vel) / 3.0;
 
-    gl_PointSize = 1.0 + p * 3.0;;
+    gl_PointSize = 1.0 + p * 2.0 + debug.r * 2.0;
 
     vColor = vec4(vec3(1.0), mix(p, 1.0, .2));
+    // vColor.b *= mix(debug.r, 1.0, .85);
+    // vColor = vec4(mix(debug, vec3(1.0), .25), 1.0);
 }

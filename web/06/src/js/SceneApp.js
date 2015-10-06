@@ -38,8 +38,9 @@ function SceneApp() {
 	var H = window.innerHeight;
 	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 
-	// this.camera._rx.value = -.3;
-	// this.camera._ry.value = -.1;
+	this.camera._rx.value = -.3;
+	this.camera._ry.value = -.1;
+	this.camera.radius.value = 650;
 
 	this.count = 0;
 
@@ -132,7 +133,7 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this._fboRipple.getTexture());
+	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves);
 	this._fboTarget.unbind();
 
 
@@ -150,6 +151,8 @@ p.updateFbo = function() {
 p.render = function() {
 	// this._getSoundData();
 
+	this.camera._ry.value += .005;
+
 	if(this.count % params.skipCount == 0) {
 		this.count = 0;
 		this.updateFbo();
@@ -159,33 +162,22 @@ p.render = function() {
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
 	
-	// this._vAxis.render();
+	this._vAxis.render();
 	// this._vDotPlane.render();
 
-	GL.setMatrices(this.cameraOthoScreen);
-	GL.rotate(this.sceneRotation.matrix);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-	this._vSphere.render(this.x.value, this.y.value);
 
 
-	this._fboRipple.bind();
-	GL.setMatrices(this.cameraOtho);
-	GL.rotate(this.rotationFront);
-	GL.setViewport(0, 0, this._fboRipple.width, this._fboRipple.height);
-	GL.clear(0, 0, 0, 0);
-	this._vRipple.render(this.waves);
-	this._fboRipple.unbind();
-
-	GL.setViewport(0, 0, GL.width, GL.height);
-	// gl.disable(gl.DEPTH_TEST);
-	// this._vCopy.render(this._fboRipple.getTexture());
-	// gl.enable(gl.DEPTH_TEST);
+	// GL.setMatrices(this.cameraOtho);
+	// GL.rotate(this.rotationFront);
+	// GL.setViewport(0, 0, 256, 265);
+	// this._vCopy.render(this._fboTarget.getTexture());
 };
 
 p._onBeat = function(e) {
 	var wh = Math.min(e.detail.value, 50.0)/50.0;
-	var r = .2;
-	var w = new Wave([.5 + random(-r, r), .5 + random(-r, r)], wh*.5 + .5, wh);
+	var r = 1;
+	var w = new Wave([ random(-r, r), random(-r, r), random(-r, r)], wh*.75 + .5, wh);
 	// var w = new Wave([.5, .5], wh*.5 + .5);
 	this.waves.push(w);
 	if(this.waves.length > params.numWaves) this.waves.shift();

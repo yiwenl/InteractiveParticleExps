@@ -4,8 +4,8 @@ window.bongiovi = require("./libs/bongiovi.js");
 // var dat = require("dat-gui");
 
 window.params = {
-	skipCount:2,
-	numParticles:64*2,
+	skipCount:3,
+	numParticles:100,
 	mouse:false,
 	auto:false,
 	startFromCenter:true

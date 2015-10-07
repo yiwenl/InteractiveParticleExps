@@ -6,6 +6,7 @@ var BeatDetector = require("./BeatDetector");
 
 var ViewSave = require("./ViewSave");
 var ViewRender = require("./ViewRender");
+var ViewRender2 = require("./ViewRender2");
 var ViewSimulation = require("./ViewSimulation");
 var ViewSphere = require("./ViewSphere");
 var ViewRipple = require("./ViewRipples");
@@ -44,8 +45,8 @@ function SceneApp() {
 	var H = window.innerHeight;
 	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 
-	// this.camera._rx.value = -.3;
-	// this.camera._ry.value = -.1;
+	this.camera._rx.value = -.3;
+	this.camera._ry.value = -.3;
 	this.camera.radius.value = 650;
 
 	this.count = 0;
@@ -124,9 +125,11 @@ p._checkPointers = function(pointer) {
 	for(var i=0; i<this._pointers.length; i++) {
 		var p = this._pointers[i];
 		if(p.id == pointer.id) {
+			p.oldPos = glm.vec3.clone(p.pos);
 			p.pos[0] = pointer.tipPosition[0];
 			p.pos[1] = pointer.tipPosition[1] + yOffset;
 			p.pos[2] = pointer.tipPosition[2] + zOffset;
+
 			return;
 		}
 	}
@@ -137,7 +140,9 @@ p._checkPointers = function(pointer) {
 
 	var o = {
 		id:pointer.id,
-		pos : pos
+		pos : pos,
+		oldPos : glm.vec3.clone(pos),
+		touched : false
 	}
 
 	this._pointers.push(o);
@@ -169,6 +174,7 @@ p._initViews = function() {
 	this._vSim 		= new ViewSimulation();
 	this._vSphere 	= new ViewSphere();
 	this._vGlobe	= new ViewGlobe();	
+	this._vRender2  = new ViewRender2();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -221,8 +227,33 @@ p.updateFbo = function() {
 	GL.setViewport(0, 0, GL.width, GL.height);
 };
 
+p._checkTouched = function() {
+	for(var i=0; i<this._pointers.length; i++) {
+		var p = this._pointers[i];
+		if(!p.lengthOld) {
+			var lOld = glm.vec3.length(p.oldPos);	
+		} else {
+			var lOld = p.lengthNew;
+		}
+		
+		var lNew = glm.vec3.length(p.pos);
+
+		p.lengthOld = lOld;
+		p.lengthNew = lNew;
+		if(lOld > params.sphereSize && lNew < params.sphereSize) {
+			var wh = Math.random() * .5 + .5;
+			var r = 1;
+			var w = new Wave(p.pos, wh*.75 + .5, wh);
+			this.waves.push(w);
+			if(this.waves.length > params.numWaves) this.waves.shift();
+		}
+	}
+};
+
 
 p.render = function() {
+	this._checkTouched();
+
 	if(this.count % params.skipCount == 0) {
 		this.count = 0;
 		this.updateFbo();
@@ -236,10 +267,8 @@ p.render = function() {
 	// this._vDotPlane.render();
 	for(var i=0; i<this._pointers.length; i++) {
 		var p = this._pointers[i];
-		this._vSphere.render(p.pos);	
-		if(i == 0) {
-			// console.log(glm.vec3.length(p));
-		}
+
+		this._vSphere.render(p.pos, p.lengthNew > params.sphereSize ? [1.0, 1.0, 1.0] : [1.0, .6, .2]);	
 	}
 
 	this._vSphere.render(this.handLeft, [1, .5, 0]);
@@ -248,12 +277,8 @@ p.render = function() {
 
 
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
+	this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
 	this._vGlobe.render(this.handLeft, this.handRight, this._pointers);
-
-	// GL.setMatrices(this.cameraOtho);
-	// GL.rotate(this.rotationFront);
-	// GL.setViewport(0, 0, 256, 265);
-	// this._vCopy.render(this._fboTarget.getTexture());
 };
 
 p._onBeat = function(e) {

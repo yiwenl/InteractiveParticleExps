@@ -10,9 +10,9 @@ uniform vec3 light0;
 uniform vec3 light1;
 uniform vec3 pointers[NUM_POINTERS];
 
-const vec3 ambient = vec3(.1);
+const vec3 ambient = vec3(.0);
 const vec3 lightColor = vec3(1.0, 1.0, .96);
-const float lightAmount = .4;
+const float lightAmount = .3;
 
 
 
@@ -36,11 +36,11 @@ void main(void) {
 		vec3 p = pointers[i];
 		float d = distance(p, vVertex);
 		if( d < minRadius ) {
-			grey += (1.0 - d/minRadius) * .2;
+			grey += (1.0 - d/minRadius) * .1;
 		}
 	}
 
 	color += vec3(grey);
 
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, .5);
 }

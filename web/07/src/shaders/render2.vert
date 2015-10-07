@@ -36,17 +36,17 @@ void main(void) {
 	vec3 posNext = texture2D(textureNext, uv).rgb;
 
 	pos = mix(posCurr, posNext, percent);
+
+	float scale = 1.0 + debug.r * .025;
+	pos *= scale;
+
 	vec4 V = uPMatrix * uMVMatrix * vec4(pos, 1.0);
     gl_Position = V;
 
     vTextureCoord = aTextureCoord;
 
-    // float D = 1.0 - getDepth(V.z/V.w, 5.0, 1000.0);
     float p = length(vel) / 3.0;
 
-    gl_PointSize = .5 + p * 1.0 + debug.r * 1.0;
+    gl_PointSize = 1.0 + p * 1.5 + debug.r * 1.5;
     vColor = vec4(vec3(1.0), mix(p, 1.0, .5));
-    // vColor.rgb = 1.0 - vColor.rgb;
-    // vColor.b *= mix(debug.r, 1.0, .85);
-    // vColor = vec4(mix(debug, vec3(1.0), .25), 1.0);
 }

@@ -15,7 +15,7 @@ uniform float radius;
 uniform float aspectRatio;
 uniform float sphereSize;
 
-const float width = 64.0;
+const float width = 100.0;
 const float height = width;
 const float numParticles = width;
 const float maxRadius = 500.0;

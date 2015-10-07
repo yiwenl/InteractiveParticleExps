@@ -5,7 +5,7 @@ window.Sono     = require("./libs/sono.min.js");
 
 window.params = {
 	skipCount:2,
-	numParticles:64,
+	numParticles:100,
 	mouse:true,
 	auto:false,
 	startFromCenter:true,

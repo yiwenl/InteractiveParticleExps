@@ -16,11 +16,12 @@ p._init = function() {
 	this.mesh = bongiovi.MeshUtils.createSphere(3, 10);
 };
 
-p.render = function(pos) {
+p.render = function(pos, color) {
+	color = color || [ 1, 1, 1];
 	this.shader.bind();
 	this.shader.uniform("position", "uniform3fv", pos || [0, 0, 0]);
 	this.shader.uniform("scale", "uniform3fv", [1, 1, 1]);
-	this.shader.uniform("color", "uniform3fv", [1, 1, 1]);
+	this.shader.uniform("color", "uniform3fv", color);
 	this.shader.uniform("opacity", "uniform1f", 1);
 	GL.draw(this.mesh);
 };

@@ -44,9 +44,10 @@ void main(void) {
     // float D = 1.0 - getDepth(V.z/V.w, 5.0, 1000.0);
     float p = length(vel) / 3.0;
 
-    gl_PointSize = 1.0 + p * 2.0 + debug.r * 2.0;
+    gl_PointSize = 2.0 + p * 2.0 + debug.r * 2.0;
 
     vColor = vec4(vec3(1.0), mix(p, 1.0, .2));
+    // vColor.rgb = 1.0 - vColor.rgb;
     // vColor.b *= mix(debug.r, 1.0, .85);
     // vColor = vec4(mix(debug, vec3(1.0), .25), 1.0);
 }

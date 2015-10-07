@@ -9,18 +9,24 @@ var ViewRender = require("./ViewRender");
 var ViewSimulation = require("./ViewSimulation");
 var ViewSphere = require("./ViewSphere");
 var ViewRipple = require("./ViewRipples");
+var ViewGlobe = require("./ViewGlobe");
 var Wave = require("./Wave");
 var glm = bongiovi.glm;
+
+var yOffset = -150;
+var zOffset = 100;
 
 var random = function(min, max) { return min + Math.random() * (max - min);	}
 
 function SceneApp() {
 	gl = GL.gl;
-	this._initSound();
+	this._initLeap();
 
 	this.frame = 0;
 	this.progress = 0;
 	this.waves = [];
+	this.handLeft = [-999, -999, -999];
+	this.handRight = [-999, -999, -999];
 	this.x = new bongiovi.EaseNumber(-999, .2);
 	this.y = new bongiovi.EaseNumber(-999, .2);
 	bongiovi.Scene.call(this);
@@ -38,64 +44,106 @@ function SceneApp() {
 	var H = window.innerHeight;
 	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 
-	this.camera._rx.value = -.3;
-	this.camera._ry.value = -.1;
+	// this.camera._rx.value = -.3;
+	// this.camera._ry.value = -.1;
 	this.camera.radius.value = 650;
 
 	this.count = 0;
 
 	this.resize();
-
-	console.log('LEAP :', Leap);
 }
 
 
 var p = SceneApp.prototype = new bongiovi.Scene();
 
-p._initSound = function() {
+p._initLeap = function() {
 	var that = this;
-	this.sound = Sono.load({
-	    url: ['assets/audio/03.mp3'],
-	    // url: ['assets/audio/Oscillate.mp3'],
-	    volume: 0.0,
-	    loop: true,
-	    onComplete: function(sound) {
-	    	console.debug("Sound Loaded");
-	    	// that.analyser = sound.effect.analyser(128);
-	    	sound.play();
-
-	    	that._beatDetector = new BeatDetector(sound);
-
-	    	// that._beatDetector.addEventListener("onBeat", that._onBeat.bind(that));
-	    }
-	});
-
-	var that = this;
-
+	
+	this._fingers = [];
 	this._pointers = [];
 	Leap.loop({
 		frame: function(frame) {
 			var hands = frame.hands;
-			// console.log(hands.length);
+			that._fingers = [];
+			that.handLeft = [0, 0, -99999];
+			that.handRight = [0, 0, -99999];
+
+			var newPointers = [];
 			if(hands.length >= 1) {
-				var hand = hands[0];
-				var fingers = hand.fingers;
-				var pointables = hand.pointables;
-				for(var i=0; i<5; i++) {
-					var p = pointables[i];
-					if(p) {
-						// console.log(p.tipPosition);
-						that._pointers[i] = p.tipPosition;
-					} else {
-						that._pointers[i] = [0, 0, 0];
+				for(var i=0; i<hands.length;i++) {
+					var hand = hands[i];
+					if(hand.type === 'right') {
+						that.handRight = hand.palmPosition;
+						that.handRight[1] += yOffset;
+						that.handRight[2] += zOffset;
+					} else if(hand.type === 'left') {
+						that.handLeft = hand.palmPosition;
+						that.handLeft[1] += yOffset;
+						that.handLeft[2] += zOffset;
+					}
+					var pointables = hand.pointables;
+					for(var j=0; j<pointables.length; j++) {
+						var p = pointables[j];
+						var pointer = glm.vec3.clone(p.tipPosition);
+						pointer[1] += yOffset;
+						pointer[2] += zOffset;
+						that._fingers.push(pointer);
+						newPointers.push(p.id);
+						that._checkPointers(p);
 					}
 				}
 			}
+
+			that._clearPointers(newPointers);
 		}
 
 	});
 	
 };
+
+p._clearPointers = function(newPointers) {
+	if(this._pointers.length == 0 ) return;
+	if(newPointers.length == 0) {
+		this._pointers = [];
+		return;
+	}
+
+	var tmp = [];
+
+	for(var i=0; i<this._pointers.length; i++) {
+		if(newPointers.indexOf(this._pointers[i].id) > -1) {
+			tmp.push(this._pointers[i]);
+		}
+	}
+
+	this._pointers = tmp;
+};
+
+
+p._checkPointers = function(pointer) {
+	for(var i=0; i<this._pointers.length; i++) {
+		var p = this._pointers[i];
+		if(p.id == pointer.id) {
+			p.pos[0] = pointer.tipPosition[0];
+			p.pos[1] = pointer.tipPosition[1] + yOffset;
+			p.pos[2] = pointer.tipPosition[2] + zOffset;
+			return;
+		}
+	}
+
+	var pos = glm.vec3.clone(pointer.tipPosition);
+	pos[1] += yOffset;
+	pos[2] += zOffset;
+
+	var o = {
+		id:pointer.id,
+		pos : pos
+	}
+
+	this._pointers.push(o);
+};
+
+
 
 p._initTextures = function() {
 	console.log('Init Textures');
@@ -120,7 +168,7 @@ p._initViews = function() {
 	this._vRender 	= new ViewRender();
 	this._vSim 		= new ViewSimulation();
 	this._vSphere 	= new ViewSphere();
-	this._vRipple 	= new ViewRipple();
+	this._vGlobe	= new ViewGlobe();	
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -175,10 +223,6 @@ p.updateFbo = function() {
 
 
 p.render = function() {
-	// this._getSoundData();
-
-	this.camera._ry.value += .005;
-
 	if(this.count % params.skipCount == 0) {
 		this.count = 0;
 		this.updateFbo();
@@ -191,12 +235,20 @@ p.render = function() {
 	this._vAxis.render();
 	// this._vDotPlane.render();
 	for(var i=0; i<this._pointers.length; i++) {
-		this._vSphere.render(this._pointers[i]);	
+		var p = this._pointers[i];
+		this._vSphere.render(p.pos);	
+		if(i == 0) {
+			// console.log(glm.vec3.length(p));
+		}
 	}
-	
+
+	this._vSphere.render(this.handLeft, [1, .5, 0]);
+	this._vSphere.render(this.handRight, [1, .5, 0]);
+	// console.log(this.handRight);
+
 
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-
+	this._vGlobe.render(this.handLeft, this.handRight, this._pointers);
 
 	// GL.setMatrices(this.cameraOtho);
 	// GL.rotate(this.rotationFront);

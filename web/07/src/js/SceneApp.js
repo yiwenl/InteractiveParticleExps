@@ -263,22 +263,29 @@ p.render = function() {
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
 	
-	this._vAxis.render();
-	// this._vDotPlane.render();
-	for(var i=0; i<this._pointers.length; i++) {
-		var p = this._pointers[i];
+	if(params.renderAxis) this._vAxis.render();
+	if(params.renderDots) this._vDotPlane.render();
 
-		this._vSphere.render(p.pos, p.lengthNew > params.sphereSize ? [1.0, 1.0, 1.0] : [1.0, .6, .2]);	
+	if(params.renderHands) {
+		for(var i=0; i<this._pointers.length; i++) {
+			var p = this._pointers[i];
+
+			this._vSphere.render(p.pos, p.lengthNew > params.sphereSize ? [1.0, 1.0, 1.0] : [1.0, .6, .2]);	
+		}	
+
+		this._vSphere.render(this.handLeft, [1, .5, 0]);
+		this._vSphere.render(this.handRight, [1, .5, 0]);
 	}
-
-	this._vSphere.render(this.handLeft, [1, .5, 0]);
-	this._vSphere.render(this.handRight, [1, .5, 0]);
-	// console.log(this.handRight);
-
-
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-	this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-	this._vGlobe.render(this.handLeft, this.handRight, this._pointers);
+	
+	if(params.renderParticles) {
+		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
+		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);	
+	}
+	
+	if(params.renderSphere) {
+		this._vGlobe.render(this.handLeft, this.handRight, this._pointers);	
+	}
+	
 };
 
 p._onBeat = function(e) {

@@ -1,7 +1,7 @@
 // app.js
 window.bongiovi = require("./libs/bongiovi.js");
 window.Sono     = require("./libs/sono.min.js");
-// var dat = require("dat-gui");
+var dat = require("dat-gui");
 
 window.params = {
 	skipCount:2,
@@ -14,6 +14,11 @@ window.params = {
 	minThreshold:4.5,
 	minGap:300,
 	numWaves:20,
+	renderSphere:true,
+	renderParticles:true,
+	renderAxis:true,
+	renderHands:true,
+	renderDots:true,
 	sphereSize:150
 };
 
@@ -41,7 +46,12 @@ window.params = {
 		this._scene = new SceneApp();
 		bongiovi.Scheduler.addEF(this, this._loop);
 
-		// this.gui = new dat.GUI({width:300});
+		this.gui = new dat.GUI({width:300});
+		this.gui.add(params, "renderSphere");
+		this.gui.add(params, "renderParticles");
+		this.gui.add(params, "renderAxis");
+		this.gui.add(params, "renderHands");
+		this.gui.add(params, "renderDots");
 	};
 
 	p._loop = function() {

@@ -19,7 +19,8 @@ window.params = {
 	renderAxis:true,
 	renderHands:true,
 	renderDots:true,
-	sphereSize:150
+	sphereSize:150,
+	grabStrength:0.1
 };
 
 (function() {
@@ -52,6 +53,7 @@ window.params = {
 		this.gui.add(params, "renderAxis");
 		this.gui.add(params, "renderHands");
 		this.gui.add(params, "renderDots");
+		this.gui.add(params, "grabStrength").listen();
 	};
 
 	p._loop = function() {

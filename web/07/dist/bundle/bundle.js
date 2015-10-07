@@ -20,7 +20,8 @@ window.params = {
 	renderAxis:true,
 	renderHands:true,
 	renderDots:true,
-	sphereSize:150
+	sphereSize:150,
+	grabStrength:0.1
 };
 
 (function() {
@@ -53,6 +54,7 @@ window.params = {
 		this.gui.add(params, "renderAxis");
 		this.gui.add(params, "renderHands");
 		this.gui.add(params, "renderDots");
+		this.gui.add(params, "grabStrength").listen();
 	};
 
 	p._loop = function() {
@@ -4777,6 +4779,10 @@ p._initLeap = function() {
 			if(hands.length >= 1) {
 				for(var i=0; i<hands.length;i++) {
 					var hand = hands[i];
+					if(i == 0) {
+						params.grabStrength = hand.grabStrength;
+					}
+					
 					if(hand.type === 'right') {
 						that.handRight = hand.palmPosition;
 						that.handRight[1] += yOffset;

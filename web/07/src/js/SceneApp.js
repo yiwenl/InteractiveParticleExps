@@ -73,6 +73,10 @@ p._initLeap = function() {
 			if(hands.length >= 1) {
 				for(var i=0; i<hands.length;i++) {
 					var hand = hands[i];
+					if(i == 0) {
+						params.grabStrength = hand.grabStrength;
+					}
+					
 					if(hand.type === 'right') {
 						that.handRight = hand.palmPosition;
 						that.handRight[1] += yOffset;

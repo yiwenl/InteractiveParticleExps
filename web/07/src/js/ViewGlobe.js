@@ -15,7 +15,7 @@ p.constructor = ViewGlobe;
 
 p._init = function() {
 	gl = GL.gl;
-	this.mesh = bongiovi.MeshUtils.createSphere(params.sphereSize-5, 24);
+	this.mesh = bongiovi.MeshUtils.createSphere(params.sphereSize-6, 24);
 };
 
 p.render = function(light0, light1, pointers) {
@@ -46,6 +46,9 @@ p.render = function(light0, light1, pointers) {
 	this.shader.uniform("light0", "uniform3fv", light0);
 	this.shader.uniform("light1", "uniform3fv", light1);
 	this.shader.uniform("pointers", "uniform3fv", positions);
+	this.shader.uniform("ambient", "uniform3fv", [0, 0, 0]);
+	this.shader.uniform("lightAmount", "uniform1f", 0);
+	this.shader.uniform("opacity", "uniform1f", 1);
 	GL.draw(this.mesh);
 };
 

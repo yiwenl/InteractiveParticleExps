@@ -11,6 +11,7 @@ var ViewSimulation = require("./ViewSimulation");
 var ViewSphere = require("./ViewSphere");
 var ViewRipple = require("./ViewRipples");
 var ViewGlobe = require("./ViewGlobe");
+var ViewIcoSphere = require("./ViewIcoSphere");
 var Wave = require("./Wave");
 var glm = bongiovi.glm;
 
@@ -170,15 +171,16 @@ p._initTextures = function() {
 
 p._initViews = function() {
 	console.log('Init Views');
-	this._vAxis     = new bongiovi.ViewAxis();
-	this._vDotPlane = new bongiovi.ViewDotPlane();
-	this._vSave     = new ViewSave();
-	this._vCopy 	= new bongiovi.ViewCopy();
-	this._vRender 	= new ViewRender();
-	this._vSim 		= new ViewSimulation();
-	this._vSphere 	= new ViewSphere();
-	this._vGlobe	= new ViewGlobe();	
-	this._vRender2  = new ViewRender2();
+	this._vAxis      = new bongiovi.ViewAxis();
+	this._vDotPlane  = new bongiovi.ViewDotPlane();
+	this._vSave      = new ViewSave();
+	this._vCopy      = new bongiovi.ViewCopy();
+	this._vRender    = new ViewRender();
+	this._vSim       = new ViewSimulation();
+	this._vSphere    = new ViewSphere();
+	this._vGlobe     = new ViewGlobe();	
+	this._vRender2   = new ViewRender2();
+	this._vIcoSphere = new ViewIcoSphere();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -288,6 +290,7 @@ p.render = function() {
 	
 	if(params.renderSphere) {
 		this._vGlobe.render(this.handLeft, this.handRight, this._pointers);	
+		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers);	
 	}
 	
 };

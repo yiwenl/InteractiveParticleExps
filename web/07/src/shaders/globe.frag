@@ -6,15 +6,16 @@ varying vec3 vVertex;
 
 const int NUM_POINTERS = 10;
 
+uniform vec3 ambient;
 uniform vec3 light0;
 uniform vec3 light1;
 uniform vec3 pointers[NUM_POINTERS];
+uniform float lightAmount;
+uniform float opacity;
 
-const vec3 ambient = vec3(.0);
+// const vec3 ambient = vec3(.0);
 const vec3 lightColor = vec3(1.0, 1.0, .96);
-const float lightAmount = .3;
-
-
+// const float lightAmount = .03;
 
 
 void main(void) {
@@ -30,17 +31,18 @@ void main(void) {
 
 	vec3 color = ambient + lambert0 * lightColor * lightAmount + lambert1 * lightColor * lightAmount + lambert2 * lightColor * .3;
 
-	float grey = .0;
 	float minRadius = 50.0;
 	for(int i=0; i<NUM_POINTERS; i++) {
 		vec3 p = pointers[i];
 		float d = distance(p, vVertex);
 		if( d < minRadius ) {
-			grey += (1.0 - d/minRadius) * .1;
+		// 	grey += (1.0 - d/minRadius) * .1;
+			vec3 n = normalize(vec3(p) - vVertex);
+			float lambert = max(dot(n, vNormal), 0.0);
+
+			color += lightColor * lambert * (1.0 - d/minRadius) * .3;
 		}
 	}
 
-	color += vec3(grey);
-
-	gl_FragColor = vec4(color, .5);
+	gl_FragColor = vec4(color, opacity);
 }

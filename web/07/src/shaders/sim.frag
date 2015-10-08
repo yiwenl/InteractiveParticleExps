@@ -15,7 +15,7 @@ uniform float radius;
 uniform float aspectRatio;
 uniform float sphereSize;
 
-const float width = 100.0;
+const float width = 128.0;
 const float height = width;
 const float numParticles = width;
 const float maxRadius = 500.0;
@@ -62,17 +62,9 @@ void main(void) {
 			vec3 dir, posParticle, velParticle;
 			float dist, f;
 
-			const float minRadius = 30.0;
+			const float minRadius = 20.0;
 			const float speedIncrease = .5;
 			const float maxSpeed = 3.0;
-
-			// float grey = 0.0;
-			// for(int i=0; i<NUM_WAVES; i++ ) {
-			// 	vec3 wCenter = normalize(waveCenters[i]) * sphereSize;
-			// 	vec3 wHeights = waveHeights[i];
-			// 	grey += getWave(pos, wCenter, wHeights.x, wHeights.y, wHeights.z);
-			// }
-			
 
 			for (float y=0.0;y<height;y++) {
 				for (float x=0.0;x<width;x++) {
@@ -82,7 +74,7 @@ void main(void) {
 					posParticle = texture2D(texture, uvPosParticle).rgb;
 					dist = distance(pos, posParticle);
 
-					float r = 3.0 + wave.r * 6.0;
+					float r = 2.0 + wave.r * 6.0;
 
 					if(dist < r) {
 						dir = normalize(pos-posParticle);
@@ -117,7 +109,13 @@ void main(void) {
 
 			gl_FragColor = vec4(vec3(grey), 1.0);
 		} else {
-			gl_FragColor = texture2D(texture, vTextureCoord);
+			const float flashingSpeed = .1;
+			vec4 color = texture2D(texture, vTextureCoord);
+			color.r += mix(color.g, 1.0, .25) * flashingSpeed;
+			if(color.r > PI * 2.0) {
+				color.r -= PI * 2.0;
+			}
+			gl_FragColor = color;
 		}
 		
 	}

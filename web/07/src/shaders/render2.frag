@@ -7,6 +7,6 @@ void main(void) {
 
 	if(distance(center, gl_PointCoord) > .45) discard;
     gl_FragColor = vColor;
-    gl_FragColor.b *= .925;
+    gl_FragColor.b *= .95;
     // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

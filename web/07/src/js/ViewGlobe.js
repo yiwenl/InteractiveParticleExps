@@ -47,8 +47,8 @@ p.render = function(light0, light1, pointers) {
 	this.shader.uniform("light1", "uniform3fv", light1);
 	this.shader.uniform("pointers", "uniform3fv", positions);
 	this.shader.uniform("ambient", "uniform3fv", [0, 0, 0]);
-	this.shader.uniform("lightAmount", "uniform1f", 0);
-	this.shader.uniform("opacity", "uniform1f", 1);
+	this.shader.uniform("lightAmount", "uniform1f", 0.2);
+	this.shader.uniform("opacity", "uniform1f", .5);
 	GL.draw(this.mesh);
 };
 

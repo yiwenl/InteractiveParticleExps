@@ -30,20 +30,17 @@ p._init = function() {
 
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {
-			// if(params.startFromCenter) {
-			// 	var pos = [random(-range, range) + window.innerWidth/2, random(-range, range) + window.innerHeight/2, .0];	
-			// } else {
-			// 	var pos = [Math.random()*window.innerWidth, Math.random() * window.innerHeight, .0];	
-			// }
-
 			var pos = [random(-range, range), random(-range, range), random(-range, range)];	
-			
-			
 			positions.push(pos);
 
-			ux = i/numParticles-1.0;
-			uy = j/numParticles-1.0;
+			ux = i/numParticles-1.0 + .5/numParticles;
+			uy = j/numParticles-1.0 + .5/numParticles;
 			coords.push([ux, uy]);
+			indices.push(count);
+			count ++;
+
+			positions.push([Math.random() * Math.PI * 2.0, Math.random(), Math.random()]);
+			coords.push([ux+1.0, uy+1.0]);
 			indices.push(count);
 			count ++;
 

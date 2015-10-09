@@ -5,6 +5,7 @@ uniform sampler2D texture;
 uniform sampler2D textureWave;
 uniform vec2 dimension;
 uniform vec3 center;
+uniform mat4 leapMatrix;
 uniform float progress;
 varying vec2 vTextureCoord;
 
@@ -103,6 +104,7 @@ void main(void) {
 			float grey = 0.0;
 			for(int i=0; i<NUM_WAVES; i++ ) {
 				vec3 wCenter = normalize(waveCenters[i]) * sphereSize;
+				wCenter = (leapMatrix * vec4(wCenter*-1.0, 1.0)).rgb;
 				vec3 wHeights = waveHeights[i];
 				grey += getWave(pos, wCenter, wHeights.x, wHeights.y, wHeights.z);
 			}

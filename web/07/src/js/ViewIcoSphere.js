@@ -52,7 +52,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(light0, light1, pointers) {
+p.render = function(light0, light1, pointers, leapMatrix, leapDirection) {
 	var positions = [];
 	for(var i=0; i<10; i++) {
 		var p = pointers[i];
@@ -80,7 +80,8 @@ p.render = function(light0, light1, pointers) {
 	this.shader.uniform("color", "uniform3fv", [1, 1, .95]);
 	this.shader.uniform("opacity", "uniform1f", .5);
 	this.shader.uniform("sphereSize", "uniform1f", params.sphereSize-4);
-
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
+	this.shader.uniform("leapDirection", "uniform1f", leapDirection);
 	this.shader.uniform("light0", "uniform3fv", light0);
 	this.shader.uniform("light1", "uniform3fv", light1);
 	this.shader.uniform("pointers", "uniform3fv", positions);

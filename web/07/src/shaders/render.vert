@@ -6,6 +6,8 @@ attribute vec2 aTextureCoord;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
+uniform mat4 leapMatrix;
+uniform float leapDirection;
 uniform sampler2D texture;
 uniform sampler2D textureNext;
 uniform sampler2D texturePortrait;
@@ -39,7 +41,7 @@ void main(void) {
 	vec3 posNext    = texture2D(textureNext, uv).rgb;
 	
 	pos             = mix(posCurr, posNext, percent);
-	vec4 V          = uPMatrix * uMVMatrix * vec4(pos, 1.0);
+	vec4 V          = uPMatrix * uMVMatrix * leapMatrix * vec4(pos*leapDirection, 1.0);
 	gl_Position     = V;
 	
 	vTextureCoord   = aTextureCoord;

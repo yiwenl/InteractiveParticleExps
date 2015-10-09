@@ -4651,6 +4651,7 @@ function LeapControl() {
 	this._handPos		= glm.vec3.create();
 	this._preHandPos	= glm.vec3.create();
 	this.matrix         = glm.mat4.create();
+	this.invertMatrix   = glm.mat4.create();
 	glm.mat4.identity(this.matrix);
 	this._offset        = .004;
 	bongiovi.Scheduler.addEF(this, this.loop);
@@ -4729,7 +4730,7 @@ p._getRotationAxis = function(vel) {
 p._updateRotation = function(aTempRotation) {
 	if(this._isTouched) {
 		this._diffX.value = (this._handPos[0] - this._preHandPos[0]);
-		this._diffY.value = -(this._handPos[2] - this._preHandPos[2]);
+		this._diffY.value = (this._handPos[2] - this._preHandPos[2]);
 	}
 
 	var v = glm.vec3.fromValues(this._diffX.value, this._diffY.value, 0);
@@ -4748,6 +4749,10 @@ p.loop = function() {
 	glm.quat.set(this.tempRotation, this._rotation[0], this._rotation[1], this._rotation[2], this._rotation[3]);
 	this._updateRotation(this.tempRotation);
 	glm.mat4.fromQuat(this.matrix, this.tempRotation);
+	glm.mat4.invert(this.invertMatrix, this.matrix);
+
+
+	// console.log(this.matrix[12], this.matrix[13], this.matrix[14]);
 	// console.log(this.matrix, this.tempRotation);
 };
 
@@ -4774,6 +4779,8 @@ var glm = bongiovi.glm;
 
 var yOffset = -150;
 var zOffset = 100;
+
+console.log(glm.mat4.invert);
 
 var random = function(min, max) { return min + Math.random() * (max - min);	}
 
@@ -4865,7 +4872,7 @@ p._initLeap = function() {
 					var pointables = hand.pointables;
 					for(var j=0; j<pointables.length; j++) {
 						var p = pointables[j];
-						var pointer = glm.vec3.clone(p.stabilizedTipPosition);
+						var pointer = glm.vec3.clone(p.tipPosition);
 						pointer[1] += yOffset;
 						pointer[2] += zOffset;
 						that._fingers.push(pointer);
@@ -4910,15 +4917,15 @@ p._checkPointers = function(pointer) {
 		var p = this._pointers[i];
 		if(p.id == pointer.id) {
 			p.oldPos = glm.vec3.clone(p.pos);
-			p.pos[0] = pointer.stabilizedTipPosition[0];
-			p.pos[1] = pointer.stabilizedTipPosition[1] + yOffset;
-			p.pos[2] = pointer.stabilizedTipPosition[2] + zOffset;
+			p.pos[0] = pointer.tipPosition[0];
+			p.pos[1] = pointer.tipPosition[1] + yOffset;
+			p.pos[2] = pointer.tipPosition[2] + zOffset;
 
 			return;
 		}
 	}
 
-	var pos = glm.vec3.clone(pointer.stabilizedTipPosition);
+	var pos = glm.vec3.clone(pointer.tipPosition);
 	pos[1] += yOffset;
 	pos[2] += zOffset;
 
@@ -4996,7 +5003,7 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves);
+	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves, this._leapControl.matrix);
 	this._fboTarget.unbind();
 
 
@@ -5046,7 +5053,7 @@ p.render = function() {
 	var percent = this.count / params.skipCount;
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
-	GL.rotate(this._leapControl.matrix);
+	// GL.rotate(this._leapControl.matrix);
 	
 	if(params.renderAxis) this._vAxis.render();
 	if(params.renderDots) this._vDotPlane.render();
@@ -5061,17 +5068,22 @@ p.render = function() {
 		this._vSphere.render(this.handLeft, [1, .5, 0]);
 		this._vSphere.render(this.handRight, [1, .5, 0]);
 	}
+
+
+	if(Math.random() > .99) {
+		console.log(this._leapControl.matrix, this._leapControl.invertMatrix);
+	}
 	
 	if(params.renderParticles) {
 		GL.enableAdditiveBlending();
-		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);	
+		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, -1);
+		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, -1);	
 		GL.enableAlphaBlending();
 	}
 	
 	if(params.renderSphere) {
 		this._vGlobe.render(this.handLeft, this.handRight, this._pointers);	
-		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers);	
+		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers, this._leapControl.matrix, -1);
 	}
 	
 	if(params.debugFbo) {
@@ -5168,7 +5180,7 @@ var faces = [[21,15,10],[103,14,15],[15,21,103],[20,103,21],[104,13,14],[14,103,
 
 function ViewIcoSphere() {
 	// bongiovi.View.call(this, glslify("../shaders/ico.vert"), bongiovi.ShaderLibs.get("simpleColorFrag"));
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// ico.vert\n\n// globe.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform float sphereSize;\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\nvarying vec3 vVertex;\n\nvoid main(void) {\n\tvec3 pos = normalize(aVertexPosition) * sphereSize;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vNormal = normalize(aVertexPosition);\n    vVertex = pos;\n    vTextureCoord = aTextureCoord;\n}", "#define GLSLIFY 1\n// globe.frag\nprecision highp float;\n\nvarying vec3 vNormal;\nvarying vec3 vVertex;\n\nconst int NUM_POINTERS = 10;\n\nuniform vec3 ambient;\nuniform vec3 light0;\nuniform vec3 light1;\nuniform vec3 pointers[NUM_POINTERS];\nuniform float lightAmount;\nuniform float opacity;\n\n// const vec3 ambient = vec3(.0);\nconst vec3 lightColor = vec3(1.0, 1.0, .926);\nconst vec3 lightColorFront = vec3(.986, .986, 1.0);\n// const float lightAmount = .03;\n\n\nvoid main(void) {\n\n\tvec3 n0 = normalize(light0 - vVertex);\n\tfloat lambert0 = max(dot(n0, vNormal), .0);\n\n\tvec3 n1 = normalize(light1 - vVertex);\n\tfloat lambert1 = max(dot(n1, vNormal), .0);\n\n\tvec3 n2 = normalize(vec3(0.0, 0.0, 1000.0) - vVertex);\n\tfloat lambert2 = max(dot(n2, vNormal), .0);\n\n\tvec3 color = ambient + lambert0 * lightColor * lightAmount + lambert1 * lightColor * lightAmount + lambert2 * lightColorFront * .3;\n\n\tfloat minRadius = 50.0;\n\tfor(int i=0; i<NUM_POINTERS; i++) {\n\t\tvec3 p = pointers[i];\n\t\tfloat d = distance(p, vVertex);\n\t\tif( d < minRadius ) {\n\t\t// \tgrey += (1.0 - d/minRadius) * .1;\n\t\t\tvec3 n = normalize(vec3(p) - vVertex);\n\t\t\tfloat lambert = max(dot(n, vNormal), 0.0);\n\n\t\t\tcolor += lightColor * lambert * (1.0 - d/minRadius) * .3;\n\t\t}\n\t}\n\n\tgl_FragColor = vec4(color, opacity);\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// ico.vert\n\n// globe.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nuniform mat4 leapMatrix;\nuniform float leapDirection;\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform float sphereSize;\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\nvarying vec3 vVertex;\n\nvoid main(void) {\n\tvec3 pos = normalize(aVertexPosition) * sphereSize;\n    gl_Position = uPMatrix * uMVMatrix * leapMatrix * vec4(pos*leapDirection, 1.0);\n    vNormal = normalize(aVertexPosition);\n    vVertex = pos;\n    vTextureCoord = aTextureCoord;\n}", "#define GLSLIFY 1\n// globe.frag\nprecision highp float;\n\nvarying vec3 vNormal;\nvarying vec3 vVertex;\n\nconst int NUM_POINTERS = 10;\n\nuniform vec3 ambient;\nuniform vec3 light0;\nuniform vec3 light1;\nuniform vec3 pointers[NUM_POINTERS];\nuniform float lightAmount;\nuniform float opacity;\n\n// const vec3 ambient = vec3(.0);\nconst vec3 lightColor = vec3(1.0, 1.0, .926);\nconst vec3 lightColorFront = vec3(.986, .986, 1.0);\n// const float lightAmount = .03;\n\n\nvoid main(void) {\n\n\tvec3 n0 = normalize(light0 - vVertex);\n\tfloat lambert0 = max(dot(n0, vNormal), .0);\n\n\tvec3 n1 = normalize(light1 - vVertex);\n\tfloat lambert1 = max(dot(n1, vNormal), .0);\n\n\tvec3 n2 = normalize(vec3(0.0, 0.0, 1000.0) - vVertex);\n\tfloat lambert2 = max(dot(n2, vNormal), .0);\n\n\tvec3 color = ambient + lambert0 * lightColor * lightAmount + lambert1 * lightColor * lightAmount + lambert2 * lightColorFront * .3;\n\n\tfloat minRadius = 50.0;\n\tfor(int i=0; i<NUM_POINTERS; i++) {\n\t\tvec3 p = pointers[i];\n\t\tfloat d = distance(p, vVertex);\n\t\tif( d < minRadius ) {\n\t\t// \tgrey += (1.0 - d/minRadius) * .1;\n\t\t\tvec3 n = normalize(vec3(p) - vVertex);\n\t\t\tfloat lambert = max(dot(n, vNormal), 0.0);\n\n\t\t\tcolor += lightColor * lambert * (1.0 - d/minRadius) * .3;\n\t\t}\n\t}\n\n\tgl_FragColor = vec4(color, opacity);\n}");
 }
 
 var p = ViewIcoSphere.prototype = new bongiovi.View();
@@ -5211,7 +5223,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(light0, light1, pointers) {
+p.render = function(light0, light1, pointers, leapMatrix, leapDirection) {
 	var positions = [];
 	for(var i=0; i<10; i++) {
 		var p = pointers[i];
@@ -5239,7 +5251,8 @@ p.render = function(light0, light1, pointers) {
 	this.shader.uniform("color", "uniform3fv", [1, 1, .95]);
 	this.shader.uniform("opacity", "uniform1f", .5);
 	this.shader.uniform("sphereSize", "uniform1f", params.sphereSize-4);
-
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
+	this.shader.uniform("leapDirection", "uniform1f", leapDirection);
 	this.shader.uniform("light0", "uniform3fv", light0);
 	this.shader.uniform("light1", "uniform3fv", light1);
 	this.shader.uniform("pointers", "uniform3fv", positions);
@@ -5257,7 +5270,7 @@ var gl;
 
 
 function ViewRender() {
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D texturePortrait;\nuniform vec2 dimension;\nuniform float progress;\nuniform float percent;\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\n\nconst float PI = 3.141592657;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nfloat exponentialIn(float t) {\n  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));\n}\n\nvoid main(void) {\n\tvec3 pos        = aVertexPosition;\n\tvec2 uv         = aTextureCoord * .5;\n\tvec2 uvVel      = uv + vec2(.5, .0);\n\tvec2 uvFlashing = uv + vec2(.5, .5);\n\tvec3 vel        = texture2D(texture, uvVel).rgb;\n\t\n\tvec2 uvDebug    = uv + vec2(.0, .5);\n\tvec3 debug      = texture2D(texture, uvDebug).rgb;\n\t\n\tvec3 posCurr    = texture2D(texture, uv).rgb;\n\tvec3 posNext    = texture2D(textureNext, uv).rgb;\n\t\n\tpos             = mix(posCurr, posNext, percent);\n\tvec4 V          = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tgl_Position     = V;\n\t\n\tvTextureCoord   = aTextureCoord;\n\t\n\t// float D      = 1.0 - getDepth(V.z/V.w, 5.0, 1000.0);\n\tfloat p         = length(vel) / 3.0;\n\t\n\tfloat flashCurr = texture2D(texture, uvFlashing).r;\n\tfloat flashNext = texture2D(textureNext, uvFlashing).r;\n\tif(flashNext < flashCurr) {\n\t\tflashNext       += PI * 2.0;\n\t}\n\tfloat flashing  = mix(flashCurr, flashNext, percent);\n\tflashing     \t= mix((sin(flashing) + 1.0) * .5, 1.0, .85);\n\t// flashing        = (sin(flashing) + 1.0) * .5;\n\t\n\tgl_PointSize    = .5 + p * 1.0 + debug.r * 1.0;\n\tvColor          = vec4(vec3(flashing*.5), mix(p, 1.0, .5));\n    // vColor.rgb = 1.0 - vColor.rgb;\n    // vColor.b *= mix(debug.r, 1.0, .85);\n    // vColor = vec4(mix(debug, vec3(1.0), .25), 1.0);\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec4 vColor;\nconst vec2 center = vec2(.5);\n\nvoid main(void) {\n\n\tif(distance(center, gl_PointCoord) > .45) discard;\n    gl_FragColor = vColor;\n    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform mat4 leapMatrix;\nuniform float leapDirection;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D texturePortrait;\nuniform vec2 dimension;\nuniform float progress;\nuniform float percent;\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\n\nconst float PI = 3.141592657;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nfloat exponentialIn(float t) {\n  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));\n}\n\nvoid main(void) {\n\tvec3 pos        = aVertexPosition;\n\tvec2 uv         = aTextureCoord * .5;\n\tvec2 uvVel      = uv + vec2(.5, .0);\n\tvec2 uvFlashing = uv + vec2(.5, .5);\n\tvec3 vel        = texture2D(texture, uvVel).rgb;\n\t\n\tvec2 uvDebug    = uv + vec2(.0, .5);\n\tvec3 debug      = texture2D(texture, uvDebug).rgb;\n\t\n\tvec3 posCurr    = texture2D(texture, uv).rgb;\n\tvec3 posNext    = texture2D(textureNext, uv).rgb;\n\t\n\tpos             = mix(posCurr, posNext, percent);\n\tvec4 V          = uPMatrix * uMVMatrix * leapMatrix * vec4(pos*leapDirection, 1.0);\n\tgl_Position     = V;\n\t\n\tvTextureCoord   = aTextureCoord;\n\t\n\t// float D      = 1.0 - getDepth(V.z/V.w, 5.0, 1000.0);\n\tfloat p         = length(vel) / 3.0;\n\t\n\tfloat flashCurr = texture2D(texture, uvFlashing).r;\n\tfloat flashNext = texture2D(textureNext, uvFlashing).r;\n\tif(flashNext < flashCurr) {\n\t\tflashNext       += PI * 2.0;\n\t}\n\tfloat flashing  = mix(flashCurr, flashNext, percent);\n\tflashing     \t= mix((sin(flashing) + 1.0) * .5, 1.0, .85);\n\t// flashing        = (sin(flashing) + 1.0) * .5;\n\t\n\tgl_PointSize    = .5 + p * 1.0 + debug.r * 1.0;\n\tvColor          = vec4(vec3(flashing*.5), mix(p, 1.0, .5));\n    // vColor.rgb = 1.0 - vColor.rgb;\n    // vColor.b *= mix(debug.r, 1.0, .85);\n    // vColor = vec4(mix(debug, vec3(1.0), .25), 1.0);\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec4 vColor;\nconst vec2 center = vec2(.5);\n\nvoid main(void) {\n\n\tif(distance(center, gl_PointCoord) > .45) discard;\n    gl_FragColor = vColor;\n    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}");
 }
 
 var p = ViewRender.prototype = new bongiovi.View();
@@ -5290,7 +5303,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(texture, textureNext, percent) {
+p.render = function(texture, textureNext, percent, leapMatrix, leapDirection) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -5299,6 +5312,8 @@ p.render = function(texture, textureNext, percent) {
 	textureNext.bind(1);
 	this.shader.uniform("percent", "uniform1f", percent);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
+	this.shader.uniform("leapDirection", "uniform1f", leapDirection);
 	GL.draw(this.mesh);
 };
 
@@ -5311,7 +5326,7 @@ var gl;
 
 
 function ViewRender2() {
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D texturePortrait;\nuniform vec2 dimension;\nuniform float progress;\nuniform float percent;\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\n\nconst float PI = 3.141592657;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nfloat exponentialIn(float t) {\n  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));\n}\n\nvoid main(void) {\n\tvec3 pos        = aVertexPosition;\n\tvec2 uv         = aTextureCoord * .5;\n\tvec2 uvVel      = uv + vec2(.5, .0);\n\tvec2 uvFlashing = uv + vec2(.5, .5);\n\tvec3 vel        = texture2D(texture, uvVel).rgb;\n\t\n\tvec2 uvDebug    = uv + vec2(.0, .5);\n\tvec3 debug      = texture2D(texture, uvDebug).rgb;\n\t\n\tvec3 posCurr    = texture2D(texture, uv).rgb;\n\tvec3 posNext    = texture2D(textureNext, uv).rgb;\n\t\n\tpos             = mix(posCurr, posNext, percent);\n\t\n\tfloat flashCurr = texture2D(texture, uvFlashing).r;\n\tfloat flashNext = texture2D(textureNext, uvFlashing).r;\n\tif(flashNext < flashCurr) {\n\t\tflashNext       += PI * 2.0;\n\t}\n\tfloat flashing  = mix(flashCurr, flashNext, percent);\n\tflashing     \t= mix((sin(flashing) + 1.0) * .5, 1.0, .85);\n\t// flashing        = (sin(flashing) + 1.0) * .5;\n\t\n\tfloat scale     = 1.0 + debug.r * .025;\n\tpos             *= scale;\n\t\n\tvec4 V          = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tgl_Position     = V;\n\t\n\tvTextureCoord   = aTextureCoord;\n\t\n\tfloat p         = length(vel) / 3.0;\n\t\n\tgl_PointSize    = .5 + p * 1. + debug.r * 1.;\n\tvColor          = vec4(vec3(flashing), mix(p, 1.0, .5));\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec4 vColor;\nconst vec2 center = vec2(.5);\n\nvoid main(void) {\n\n\tif(distance(center, gl_PointCoord) > .45) discard;\n    gl_FragColor = vColor;\n    gl_FragColor.b *= .95;\n    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform mat4 leapMatrix;\nuniform float leapDirection;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D texturePortrait;\nuniform vec2 dimension;\nuniform float progress;\nuniform float percent;\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\n\nconst float PI = 3.141592657;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nfloat exponentialIn(float t) {\n  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));\n}\n\nvoid main(void) {\n\tvec3 pos        = aVertexPosition;\n\tvec2 uv         = aTextureCoord * .5;\n\tvec2 uvVel      = uv + vec2(.5, .0);\n\tvec2 uvFlashing = uv + vec2(.5, .5);\n\tvec3 vel        = texture2D(texture, uvVel).rgb;\n\t\n\tvec2 uvDebug    = uv + vec2(.0, .5);\n\tvec3 debug      = texture2D(texture, uvDebug).rgb;\n\t\n\tvec3 posCurr    = texture2D(texture, uv).rgb;\n\tvec3 posNext    = texture2D(textureNext, uv).rgb;\n\t\n\tpos             = mix(posCurr, posNext, percent);\n\t\n\tfloat flashCurr = texture2D(texture, uvFlashing).r;\n\tfloat flashNext = texture2D(textureNext, uvFlashing).r;\n\tif(flashNext < flashCurr) {\n\t\tflashNext       += PI * 2.0;\n\t}\n\tfloat flashing  = mix(flashCurr, flashNext, percent);\n\tflashing     \t= mix((sin(flashing) + 1.0) * .5, 1.0, .85);\n\t// flashing        = (sin(flashing) + 1.0) * .5;\n\t\n\tfloat scale     = 1.0 + debug.r * .025;\n\tpos             *= scale;\n\t\n\tvec4 V          = uPMatrix * uMVMatrix * leapMatrix * vec4(pos*leapDirection, 1.0);\n\tgl_Position     = V;\n\t\n\tvTextureCoord   = aTextureCoord;\n\t\n\tfloat p         = length(vel) / 3.0;\n\t\n\tgl_PointSize    = .5 + p * 1. + debug.r * 1.;\n\tvColor          = vec4(vec3(flashing), mix(p, 1.0, .5));\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec4 vColor;\nconst vec2 center = vec2(.5);\n\nvoid main(void) {\n\n\tif(distance(center, gl_PointCoord) > .45) discard;\n    gl_FragColor = vColor;\n    gl_FragColor.b *= .95;\n    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}");
 }
 
 var p = ViewRender2.prototype = new bongiovi.View();
@@ -5344,7 +5359,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(texture, textureNext, percent) {
+p.render = function(texture, textureNext, percent, leapMatrix, leapDirection) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -5354,6 +5369,8 @@ p.render = function(texture, textureNext, percent) {
 	this.shader.uniform("percent", "uniform1f", percent);
 	this.shader.uniform("sphereSize", "uniform1f", params.sphereSize);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
+	this.shader.uniform("leapDirection", "uniform1f", leapDirection);
 	GL.draw(this.mesh);
 };
 
@@ -5481,7 +5498,7 @@ var gl;
 
 function ViewSimulation() {
 	this._count = Math.random() * 0xFF;
-	bongiovi.View.call(this, null, "#define GLSLIFY 1\n// sim.frag\n\nprecision mediump float;\nuniform sampler2D texture;\nuniform sampler2D textureWave;\nuniform vec2 dimension;\nuniform vec3 center;\nuniform float progress;\nvarying vec2 vTextureCoord;\n\nuniform float time;\nuniform float cx;\nuniform float cy;\nuniform float radius;\nuniform float aspectRatio;\nuniform float sphereSize;\n\nconst float width = 128.0;\nconst float height = width;\nconst float numParticles = width;\nconst float maxRadius = 500.0;\n\nconst float PI = 3.141592657;\nconst int NUM_WAVES = 30;\nuniform vec3 waveCenters[NUM_WAVES];\nuniform vec3 waveHeights[NUM_WAVES];\n\nfloat getWave(vec3 pos, vec3 wc, float wf, float wh, float wl) {\n\tfloat distToCenter = distance(pos, wc);\n\tfloat w = 0.0;\n\tfloat distToWaveFront = distance(distToCenter, wf);\n\n\tif(distToWaveFront < wl) {\n\t\tw = (1.0 - sin(distToWaveFront/wl * PI * .5)) * wh;\n\t}\n\n\treturn smoothstep(0.0, 1.0, w);\n}\n\nvoid main(void) {\n\tvec2 resolution = vec2(numParticles*2.0, numParticles*2.0);\n\tvec2 uv = gl_FragCoord.xy / resolution.xy;\n\tfloat maxLength = length(vec3(1.0));\n\n\tif(vTextureCoord.y < .5) {\n\t\tif(vTextureCoord.x < .5) {\n\t\t\tvec2 uvVel = vTextureCoord + vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 vel = texture2D(texture, uvVel).rgb;\n\t\t\tpos += vel;\n\n\t\t\tpos = normalize(pos) * sphereSize;\n\t\t\t// if(distance(pos, center) > maxRadius) pos = vec3(center);\n\t\t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\tvec2 uvPos = vTextureCoord - vec2(.5, .0);\n\t\t\tvec2 uvWave = vTextureCoord + vec2(-.5, .5);\n\t\t\tvec3 pos = texture2D(texture, uvPos).rgb;\n\t\t\tvec3 vel = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 wave = texture2D(texture, uvWave).rgb;\n\t\t\tvec2 uvPosParticle, uvVelParticle;\n\t\t\tvec3 dir, posParticle, velParticle;\n\t\t\tfloat dist, f;\n\n\t\t\tconst float minRadius = 20.0;\n\t\t\tconst float speedIncrease = .5;\n\t\t\tconst float maxSpeed = 3.0;\n\n\t\t\tfor (float y=0.0;y<height;y++) {\n\t\t\t\tfor (float x=0.0;x<width;x++) {\n\t\t\t\t\tif( (x+numParticles) == gl_FragCoord.x && y == gl_FragCoord.y) continue;\n\t\t\t\t\t// if(pIndex == currentIndex) continue;\n\t\t\t\t\tuvPosParticle = vec2(x/resolution.x, y/resolution.y);\n\t\t\t\t\tposParticle = texture2D(texture, uvPosParticle).rgb;\n\t\t\t\t\tdist = distance(pos, posParticle);\n\n\t\t\t\t\tfloat r = 2.0 + wave.r * 6.0;\n\n\t\t\t\t\tif(dist < r) {\n\t\t\t\t\t\tdir = normalize(pos-posParticle);\n\t\t\t\t\t\tf = 1.0/ (dist/r) * .075;\n\t\t\t\t\t\tvel += dir * f;\n\t\t\t\t\t}   \n\t\t\t\t}\n\t\t\t}\n\n\t\t\t\n\t\t\tvel *= .92;\n\n\t\t\t// maxSpeed = min(3.0, maxSpeed);\n\t\t\tif(length(vel) > maxSpeed) {\n\t\t\t\tvel = normalize(vel) * maxSpeed;\n\t\t\t}\n\n\t\t\tgl_FragColor = vec4(vel, 1.0); \n\t\t\t \n\t\t}\n\t} else {\n\t\tif(vTextureCoord.x < .5) {\n\n\t\t\tvec2 uvPos = vTextureCoord - vec2(0.0, 0.5);\n\t\t\tvec3 pos = texture2D(texture, uvPos).rgb;\n\t\t\tfloat grey = 0.0;\n\t\t\tfor(int i=0; i<NUM_WAVES; i++ ) {\n\t\t\t\tvec3 wCenter = normalize(waveCenters[i]) * sphereSize;\n\t\t\t\tvec3 wHeights = waveHeights[i];\n\t\t\t\tgrey += getWave(pos, wCenter, wHeights.x, wHeights.y, wHeights.z);\n\t\t\t}\n\n\t\t\tgl_FragColor = vec4(vec3(grey), 1.0);\n\t\t} else {\n\t\t\tconst float flashingSpeed = .1;\n\t\t\tvec4 color = texture2D(texture, vTextureCoord);\n\t\t\tcolor.r += mix(color.g, 1.0, .25) * flashingSpeed;\n\t\t\tif(color.r > PI * 2.0) {\n\t\t\t\tcolor.r -= PI * 2.0;\n\t\t\t}\n\t\t\tgl_FragColor = color;\n\t\t}\n\t\t\n\t}\n}");
+	bongiovi.View.call(this, null, "#define GLSLIFY 1\n// sim.frag\n\nprecision mediump float;\nuniform sampler2D texture;\nuniform sampler2D textureWave;\nuniform vec2 dimension;\nuniform vec3 center;\nuniform mat4 leapMatrix;\nuniform float progress;\nvarying vec2 vTextureCoord;\n\nuniform float time;\nuniform float cx;\nuniform float cy;\nuniform float radius;\nuniform float aspectRatio;\nuniform float sphereSize;\n\nconst float width = 128.0;\nconst float height = width;\nconst float numParticles = width;\nconst float maxRadius = 500.0;\n\nconst float PI = 3.141592657;\nconst int NUM_WAVES = 30;\nuniform vec3 waveCenters[NUM_WAVES];\nuniform vec3 waveHeights[NUM_WAVES];\n\nfloat getWave(vec3 pos, vec3 wc, float wf, float wh, float wl) {\n\tfloat distToCenter = distance(pos, wc);\n\tfloat w = 0.0;\n\tfloat distToWaveFront = distance(distToCenter, wf);\n\n\tif(distToWaveFront < wl) {\n\t\tw = (1.0 - sin(distToWaveFront/wl * PI * .5)) * wh;\n\t}\n\n\treturn smoothstep(0.0, 1.0, w);\n}\n\nvoid main(void) {\n\tvec2 resolution = vec2(numParticles*2.0, numParticles*2.0);\n\tvec2 uv = gl_FragCoord.xy / resolution.xy;\n\tfloat maxLength = length(vec3(1.0));\n\n\tif(vTextureCoord.y < .5) {\n\t\tif(vTextureCoord.x < .5) {\n\t\t\tvec2 uvVel = vTextureCoord + vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 vel = texture2D(texture, uvVel).rgb;\n\t\t\tpos += vel;\n\n\t\t\tpos = normalize(pos) * sphereSize;\n\t\t\t// if(distance(pos, center) > maxRadius) pos = vec3(center);\n\t\t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\tvec2 uvPos = vTextureCoord - vec2(.5, .0);\n\t\t\tvec2 uvWave = vTextureCoord + vec2(-.5, .5);\n\t\t\tvec3 pos = texture2D(texture, uvPos).rgb;\n\t\t\tvec3 vel = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 wave = texture2D(texture, uvWave).rgb;\n\t\t\tvec2 uvPosParticle, uvVelParticle;\n\t\t\tvec3 dir, posParticle, velParticle;\n\t\t\tfloat dist, f;\n\n\t\t\tconst float minRadius = 20.0;\n\t\t\tconst float speedIncrease = .5;\n\t\t\tconst float maxSpeed = 3.0;\n\n\t\t\tfor (float y=0.0;y<height;y++) {\n\t\t\t\tfor (float x=0.0;x<width;x++) {\n\t\t\t\t\tif( (x+numParticles) == gl_FragCoord.x && y == gl_FragCoord.y) continue;\n\t\t\t\t\t// if(pIndex == currentIndex) continue;\n\t\t\t\t\tuvPosParticle = vec2(x/resolution.x, y/resolution.y);\n\t\t\t\t\tposParticle = texture2D(texture, uvPosParticle).rgb;\n\t\t\t\t\tdist = distance(pos, posParticle);\n\n\t\t\t\t\tfloat r = 2.0 + wave.r * 6.0;\n\n\t\t\t\t\tif(dist < r) {\n\t\t\t\t\t\tdir = normalize(pos-posParticle);\n\t\t\t\t\t\tf = 1.0/ (dist/r) * .075;\n\t\t\t\t\t\tvel += dir * f;\n\t\t\t\t\t}   \n\t\t\t\t}\n\t\t\t}\n\n\t\t\t\n\t\t\tvel *= .92;\n\n\t\t\t// maxSpeed = min(3.0, maxSpeed);\n\t\t\tif(length(vel) > maxSpeed) {\n\t\t\t\tvel = normalize(vel) * maxSpeed;\n\t\t\t}\n\n\t\t\tgl_FragColor = vec4(vel, 1.0); \n\t\t\t \n\t\t}\n\t} else {\n\t\tif(vTextureCoord.x < .5) {\n\n\t\t\tvec2 uvPos = vTextureCoord - vec2(0.0, 0.5);\n\t\t\tvec3 pos = texture2D(texture, uvPos).rgb;\n\t\t\tfloat grey = 0.0;\n\t\t\tfor(int i=0; i<NUM_WAVES; i++ ) {\n\t\t\t\tvec3 wCenter = normalize(waveCenters[i]) * sphereSize;\n\t\t\t\twCenter = (leapMatrix * vec4(wCenter*-1.0, 1.0)).rgb;\n\t\t\t\tvec3 wHeights = waveHeights[i];\n\t\t\t\tgrey += getWave(pos, wCenter, wHeights.x, wHeights.y, wHeights.z);\n\t\t\t}\n\n\t\t\tgl_FragColor = vec4(vec3(grey), 1.0);\n\t\t} else {\n\t\t\tconst float flashingSpeed = .1;\n\t\t\tvec4 color = texture2D(texture, vTextureCoord);\n\t\t\tcolor.r += mix(color.g, 1.0, .25) * flashingSpeed;\n\t\t\tif(color.r > PI * 2.0) {\n\t\t\t\tcolor.r -= PI * 2.0;\n\t\t\t}\n\t\t\tgl_FragColor = color;\n\t\t}\n\t\t\n\t}\n}");
 }
 
 var p = ViewSimulation.prototype = new bongiovi.View();
@@ -5493,7 +5510,7 @@ p._init = function() {
 	this.mesh = bongiovi.MeshUtils.createPlane(2, 2, 1);
 };
 
-p.render = function(texture, x, y, radius, waves) {
+p.render = function(texture, x, y, radius, waves, leapMatrix, leapDirection) {
 	var waveCenters = [];
 	var waveHeights = [];
 	var numWaves = params.numWaves;
@@ -5530,6 +5547,7 @@ p.render = function(texture, x, y, radius, waves) {
 
 	this.shader.uniform("waveCenters", "uniform3fv", waveCenters);
 	this.shader.uniform("waveHeights", "uniform3fv", waveHeights);
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
 	texture.bind(0);
 	GL.draw(this.mesh);
 

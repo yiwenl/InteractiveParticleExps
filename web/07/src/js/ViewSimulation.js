@@ -18,7 +18,7 @@ p._init = function() {
 	this.mesh = bongiovi.MeshUtils.createPlane(2, 2, 1);
 };
 
-p.render = function(texture, x, y, radius, waves) {
+p.render = function(texture, x, y, radius, waves, leapMatrix, leapDirection) {
 	var waveCenters = [];
 	var waveHeights = [];
 	var numWaves = params.numWaves;
@@ -55,6 +55,7 @@ p.render = function(texture, x, y, radius, waves) {
 
 	this.shader.uniform("waveCenters", "uniform3fv", waveCenters);
 	this.shader.uniform("waveHeights", "uniform3fv", waveHeights);
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
 	texture.bind(0);
 	GL.draw(this.mesh);
 

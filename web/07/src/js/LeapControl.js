@@ -12,6 +12,7 @@ function LeapControl() {
 	this._handPos		= glm.vec3.create();
 	this._preHandPos	= glm.vec3.create();
 	this.matrix         = glm.mat4.create();
+	this.invertMatrix   = glm.mat4.create();
 	glm.mat4.identity(this.matrix);
 	this._offset        = .004;
 	bongiovi.Scheduler.addEF(this, this.loop);
@@ -90,7 +91,7 @@ p._getRotationAxis = function(vel) {
 p._updateRotation = function(aTempRotation) {
 	if(this._isTouched) {
 		this._diffX.value = (this._handPos[0] - this._preHandPos[0]);
-		this._diffY.value = -(this._handPos[2] - this._preHandPos[2]);
+		this._diffY.value = (this._handPos[2] - this._preHandPos[2]);
 	}
 
 	var v = glm.vec3.fromValues(this._diffX.value, this._diffY.value, 0);
@@ -109,6 +110,10 @@ p.loop = function() {
 	glm.quat.set(this.tempRotation, this._rotation[0], this._rotation[1], this._rotation[2], this._rotation[3]);
 	this._updateRotation(this.tempRotation);
 	glm.mat4.fromQuat(this.matrix, this.tempRotation);
+	glm.mat4.invert(this.invertMatrix, this.matrix);
+
+
+	// console.log(this.matrix[12], this.matrix[13], this.matrix[14]);
 	// console.log(this.matrix, this.tempRotation);
 };
 

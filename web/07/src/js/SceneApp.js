@@ -19,6 +19,8 @@ var glm = bongiovi.glm;
 var yOffset = -150;
 var zOffset = 100;
 
+console.log(glm.mat4.invert);
+
 var random = function(min, max) { return min + Math.random() * (max - min);	}
 
 function SceneApp() {
@@ -109,7 +111,7 @@ p._initLeap = function() {
 					var pointables = hand.pointables;
 					for(var j=0; j<pointables.length; j++) {
 						var p = pointables[j];
-						var pointer = glm.vec3.clone(p.stabilizedTipPosition);
+						var pointer = glm.vec3.clone(p.tipPosition);
 						pointer[1] += yOffset;
 						pointer[2] += zOffset;
 						that._fingers.push(pointer);
@@ -154,15 +156,15 @@ p._checkPointers = function(pointer) {
 		var p = this._pointers[i];
 		if(p.id == pointer.id) {
 			p.oldPos = glm.vec3.clone(p.pos);
-			p.pos[0] = pointer.stabilizedTipPosition[0];
-			p.pos[1] = pointer.stabilizedTipPosition[1] + yOffset;
-			p.pos[2] = pointer.stabilizedTipPosition[2] + zOffset;
+			p.pos[0] = pointer.tipPosition[0];
+			p.pos[1] = pointer.tipPosition[1] + yOffset;
+			p.pos[2] = pointer.tipPosition[2] + zOffset;
 
 			return;
 		}
 	}
 
-	var pos = glm.vec3.clone(pointer.stabilizedTipPosition);
+	var pos = glm.vec3.clone(pointer.tipPosition);
 	pos[1] += yOffset;
 	pos[2] += zOffset;
 
@@ -240,7 +242,7 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves);
+	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves, this._leapControl.matrix);
 	this._fboTarget.unbind();
 
 
@@ -290,7 +292,7 @@ p.render = function() {
 	var percent = this.count / params.skipCount;
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
-	GL.rotate(this._leapControl.matrix);
+	// GL.rotate(this._leapControl.matrix);
 	
 	if(params.renderAxis) this._vAxis.render();
 	if(params.renderDots) this._vDotPlane.render();
@@ -305,17 +307,22 @@ p.render = function() {
 		this._vSphere.render(this.handLeft, [1, .5, 0]);
 		this._vSphere.render(this.handRight, [1, .5, 0]);
 	}
+
+
+	if(Math.random() > .99) {
+		console.log(this._leapControl.matrix, this._leapControl.invertMatrix);
+	}
 	
 	if(params.renderParticles) {
 		GL.enableAdditiveBlending();
-		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);	
+		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, -1);
+		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, -1);	
 		GL.enableAlphaBlending();
 	}
 	
 	if(params.renderSphere) {
 		this._vGlobe.render(this.handLeft, this.handRight, this._pointers);	
-		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers);	
+		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers, this._leapControl.matrix, -1);
 	}
 	
 	if(params.debugFbo) {

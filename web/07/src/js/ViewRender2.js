@@ -38,7 +38,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(texture, textureNext, percent) {
+p.render = function(texture, textureNext, percent, leapMatrix, leapDirection) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -48,6 +48,8 @@ p.render = function(texture, textureNext, percent) {
 	this.shader.uniform("percent", "uniform1f", percent);
 	this.shader.uniform("sphereSize", "uniform1f", params.sphereSize);
 	this.shader.uniform("dimension", "uniform2fv", [GL.width, GL.height]);
+	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
+	this.shader.uniform("leapDirection", "uniform1f", leapDirection);
 	GL.draw(this.mesh);
 };
 

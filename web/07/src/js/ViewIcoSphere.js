@@ -78,7 +78,7 @@ p.render = function(light0, light1, pointers) {
 	this.shader.bind();
 	gl.lineWidth(.5);
 	this.shader.uniform("color", "uniform3fv", [1, 1, .95]);
-	this.shader.uniform("opacity", "uniform1f", .25);
+	this.shader.uniform("opacity", "uniform1f", .5);
 	this.shader.uniform("sphereSize", "uniform1f", params.sphereSize-4);
 
 	this.shader.uniform("light0", "uniform3fv", light0);

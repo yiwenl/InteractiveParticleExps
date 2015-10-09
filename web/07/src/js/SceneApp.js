@@ -13,6 +13,7 @@ var ViewRipple = require("./ViewRipples");
 var ViewGlobe = require("./ViewGlobe");
 var ViewIcoSphere = require("./ViewIcoSphere");
 var Wave = require("./Wave");
+var LeapControl = require("./LeapControl");
 var glm = bongiovi.glm;
 
 var yOffset = -150;
@@ -59,6 +60,7 @@ function SceneApp() {
 var p = SceneApp.prototype = new bongiovi.Scene();
 
 p._initLeap = function() {
+	this._leapControl = new LeapControl();
 	var that = this;
 	
 	this._fingers = [];
@@ -75,6 +77,7 @@ p._initLeap = function() {
 			that.handRight = [0, 0, -99999];
 
 			var newPointers = [];
+			var hasErrorDetection = false;
 			if(hands.length >= 1) {
 				for(var i=0; i<hands.length;i++) {
 					var hand = hands[i];
@@ -84,6 +87,7 @@ p._initLeap = function() {
 
 					if(hand.type === 'right') {
 						if( Math.abs(hand.stabilizedPalmPosition[1] + yOffset - that.preRightY) > 100) {
+							hasErrorDetection = true;
 							that.handRight = that.oldHandRight;
 						} else {
 							that.handRight = hand.stabilizedPalmPosition;
@@ -93,6 +97,7 @@ p._initLeap = function() {
 						
 					} else if(hand.type === 'left') {
 						if( Math.abs(hand.stabilizedPalmPosition[1] + yOffset - that.preLeftY) > 100) {
+							hasErrorDetection = true;
 							that.handLeft = that.oldHandLeft;
 						} else {
 							that.handLeft = hand.stabilizedPalmPosition;
@@ -115,6 +120,11 @@ p._initLeap = function() {
 			}
 
 			that._clearPointers(newPointers);
+
+			if(!hasErrorDetection) {
+				that._leapControl.updatePointers(that._pointers, frame);	
+			}
+			
 		}
 
 	});
@@ -138,7 +148,6 @@ p._clearPointers = function(newPointers) {
 
 	this._pointers = tmp;
 };
-
 
 p._checkPointers = function(pointer) {
 	for(var i=0; i<this._pointers.length; i++) {
@@ -166,8 +175,6 @@ p._checkPointers = function(pointer) {
 
 	this._pointers.push(o);
 };
-
-
 
 p._initTextures = function() {
 	console.log('Init Textures');
@@ -283,6 +290,7 @@ p.render = function() {
 	var percent = this.count / params.skipCount;
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
+	GL.rotate(this._leapControl.matrix);
 	
 	if(params.renderAxis) this._vAxis.render();
 	if(params.renderDots) this._vDotPlane.render();

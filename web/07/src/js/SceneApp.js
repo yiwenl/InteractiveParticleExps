@@ -11,6 +11,7 @@ var ViewSimulation = require("./ViewSimulation");
 var ViewSphere = require("./ViewSphere");
 var ViewRipple = require("./ViewRipples");
 var ViewGlobe = require("./ViewGlobe");
+var ViewIcoSphere = require("./ViewIcoSphere");
 var Wave = require("./Wave");
 var glm = bongiovi.glm;
 
@@ -184,15 +185,16 @@ p._initTextures = function() {
 
 p._initViews = function() {
 	console.log('Init Views');
-	this._vAxis     = new bongiovi.ViewAxis();
-	this._vDotPlane = new bongiovi.ViewDotPlane();
-	this._vSave     = new ViewSave();
-	this._vCopy 	= new bongiovi.ViewCopy();
-	this._vRender 	= new ViewRender();
-	this._vSim 		= new ViewSimulation();
-	this._vSphere 	= new ViewSphere();
-	this._vGlobe	= new ViewGlobe();	
-	this._vRender2  = new ViewRender2();
+	this._vAxis      = new bongiovi.ViewAxis();
+	this._vDotPlane  = new bongiovi.ViewDotPlane();
+	this._vSave      = new ViewSave();
+	this._vCopy      = new bongiovi.ViewCopy();
+	this._vRender    = new ViewRender();
+	this._vSim       = new ViewSimulation();
+	this._vSphere    = new ViewSphere();
+	this._vGlobe     = new ViewGlobe();	
+	this._vRender2   = new ViewRender2();
+	this._vIcoSphere = new ViewIcoSphere();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -243,6 +245,7 @@ p.updateFbo = function() {
 	GL.setMatrices(this.camera);
 	GL.rotate(this.sceneRotation.matrix);		
 	GL.setViewport(0, 0, GL.width, GL.height);
+
 };
 
 p._checkTouched = function() {
@@ -261,7 +264,7 @@ p._checkTouched = function() {
 		if(lOld > params.sphereSize && lNew < params.sphereSize) {
 			var wh = Math.random() * .5 + .5;
 			var r = 1;
-			var w = new Wave(p.pos, wh*.75 + .5, wh);
+			var w = new Wave(glm.vec3.clone(p.pos), wh*.75 + .5, wh);
 			this.waves.push(w);
 			if(this.waves.length > params.numWaves) this.waves.shift();
 		}
@@ -296,23 +299,25 @@ p.render = function() {
 	}
 	
 	if(params.renderParticles) {
+		GL.enableAdditiveBlending();
 		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
 		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);	
+		GL.enableAlphaBlending();
 	}
 	
 	if(params.renderSphere) {
 		this._vGlobe.render(this.handLeft, this.handRight, this._pointers);	
+		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers);	
 	}
 	
-};
-
-p._onBeat = function(e) {
-	var wh = Math.min(e.detail.value, 50.0)/50.0;
-	var r = 1;
-	var w = new Wave([ random(-r, r), random(-r, r), random(-r, r)], wh*.75 + .5, wh);
-	// var w = new Wave([.5, .5], wh*.5 + .5);
-	this.waves.push(w);
-	if(this.waves.length > params.numWaves) this.waves.shift();
+	if(params.debugFbo) {
+		GL.setMatrices(this.cameraOtho);
+		GL.rotate(this.rotationFront);
+		GL.setViewport(0, 0, 512, 512);	
+		// GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
+		this._vCopy.render(this._fboCurrent.getTexture());
+	}
+	
 };
 
 

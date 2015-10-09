@@ -5,7 +5,7 @@ var dat = require("dat-gui");
 
 window.params = {
 	skipCount:2,
-	numParticles:100,
+	numParticles:128,
 	mouse:true,
 	auto:false,
 	startFromCenter:true,
@@ -19,6 +19,7 @@ window.params = {
 	renderAxis:true,
 	renderHands:true,
 	renderDots:true,
+	debugFbo:false,
 	sphereSize:150,
 	grabStrength:0.1
 };

@@ -66,6 +66,10 @@ p._initLeap = function() {
 		frame: function(frame) {
 			var hands = frame.hands;
 			that._fingers = [];
+			that.preLeftY = that.handLeft[1];
+			that.preRightY = that.handRight[1];
+			that.oldHandLeft = glm.vec3.clone(that.handLeft);
+			that.oldHandRight = glm.vec3.clone(that.handRight);
 			that.handLeft = [0, 0, -99999];
 			that.handRight = [0, 0, -99999];
 
@@ -76,20 +80,30 @@ p._initLeap = function() {
 					if(i == 0) {
 						params.grabStrength = hand.grabStrength;
 					}
-					
+
 					if(hand.type === 'right') {
-						that.handRight = hand.palmPosition;
-						that.handRight[1] += yOffset;
-						that.handRight[2] += zOffset;
+						if( Math.abs(hand.stabilizedPalmPosition[1] + yOffset - that.preRightY) > 100) {
+							that.handRight = that.oldHandRight;
+						} else {
+							that.handRight = hand.stabilizedPalmPosition;
+							that.handRight[1] += yOffset;
+							that.handRight[2] += zOffset;	
+						}
+						
 					} else if(hand.type === 'left') {
-						that.handLeft = hand.palmPosition;
-						that.handLeft[1] += yOffset;
-						that.handLeft[2] += zOffset;
+						if( Math.abs(hand.stabilizedPalmPosition[1] + yOffset - that.preLeftY) > 100) {
+							that.handLeft = that.oldHandLeft;
+						} else {
+							that.handLeft = hand.stabilizedPalmPosition;
+							that.handLeft[1] += yOffset;
+							that.handLeft[2] += zOffset;	
+						}
+						
 					}
 					var pointables = hand.pointables;
 					for(var j=0; j<pointables.length; j++) {
 						var p = pointables[j];
-						var pointer = glm.vec3.clone(p.tipPosition);
+						var pointer = glm.vec3.clone(p.stabilizedTipPosition);
 						pointer[1] += yOffset;
 						pointer[2] += zOffset;
 						that._fingers.push(pointer);
@@ -130,15 +144,15 @@ p._checkPointers = function(pointer) {
 		var p = this._pointers[i];
 		if(p.id == pointer.id) {
 			p.oldPos = glm.vec3.clone(p.pos);
-			p.pos[0] = pointer.tipPosition[0];
-			p.pos[1] = pointer.tipPosition[1] + yOffset;
-			p.pos[2] = pointer.tipPosition[2] + zOffset;
+			p.pos[0] = pointer.stabilizedTipPosition[0];
+			p.pos[1] = pointer.stabilizedTipPosition[1] + yOffset;
+			p.pos[2] = pointer.stabilizedTipPosition[2] + zOffset;
 
 			return;
 		}
 	}
 
-	var pos = glm.vec3.clone(pointer.tipPosition);
+	var pos = glm.vec3.clone(pointer.stabilizedTipPosition);
 	pos[1] += yOffset;
 	pos[2] += zOffset;
 

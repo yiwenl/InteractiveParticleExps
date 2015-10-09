@@ -5,7 +5,7 @@ var dat = require("dat-gui");
 
 window.params = {
 	skipCount:2,
-	numParticles:128,
+	numParticles:100,
 	mouse:true,
 	auto:false,
 	startFromCenter:true,
@@ -16,7 +16,7 @@ window.params = {
 	numWaves:20,
 	renderSphere:true,
 	renderParticles:true,
-	renderAxis:true,
+	renderAxis:false,
 	renderHands:true,
 	renderDots:true,
 	debugFbo:false,
@@ -28,13 +28,24 @@ window.params = {
 	var SceneApp = require("./SceneApp");
 
 	App = function() {
+
+		var loader = new bongiovi.SimpleImageLoader();
+		var assets = ["assets/gold.jpg"];
+
+		loader.load(assets, this, this._onImageLoaded);
+	}
+
+	var p = App.prototype;
+
+
+	p._onImageLoaded = function(img) {
+		window.images = img;
+
 		if(document.body) this._init();
 		else {
 			window.addEventListener("load", this._init.bind(this));
 		}
-	}
-
-	var p = App.prototype;
+	};
 
 
 	p._init = function() {

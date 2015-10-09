@@ -60,8 +60,6 @@ p.updatePointers = function(pointers, frame) {
 
 
 p._onDown = function(pos) {
-	console.log('on Down : ', pos);
-
 	var tempRotation = glm.quat.clone(this._rotation);
 	this._updateRotation(tempRotation);
 	this._rotation = tempRotation;
@@ -90,7 +88,7 @@ p._getRotationAxis = function(vel) {
 
 p._updateRotation = function(aTempRotation) {
 	if(this._isTouched) {
-		this._diffX.value = (this._handPos[0] - this._preHandPos[0]);
+		this._diffX.value = -(this._handPos[0] - this._preHandPos[0]);
 		this._diffY.value = (this._handPos[2] - this._preHandPos[2]);
 	}
 

@@ -19,14 +19,12 @@ var glm = bongiovi.glm;
 var yOffset = -150;
 var zOffset = 100;
 
-console.log(glm.mat4.invert);
-
 var random = function(min, max) { return min + Math.random() * (max - min);	}
 
 function SceneApp() {
 	gl = GL.gl;
 	this._initLeap();
-
+	this.uvOffset = 0.0;
 	this.frame = 0;
 	this.progress = 0;
 	this.waves = [];
@@ -49,8 +47,8 @@ function SceneApp() {
 	var H = window.innerHeight;
 	glm.mat4.ortho(this.cameraOthoScreen.projection, 0, W, H, 0, 0, 10000);
 
-	this.camera._rx.value = -.3;
-	this.camera._ry.value = -.3;
+	this.camera._rx.value = -.23;
+	// this.camera._ry.value = -.23;
 	this.camera.radius.value = 650;
 
 	this.count = 0;
@@ -190,6 +188,7 @@ p._initTextures = function() {
 	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboRipple 	= new bongiovi.FrameBuffer(512, 512);
+	this._textureGold 	= new bongiovi.GLTexture(images.gold);
 };
 
 p._initViews = function() {
@@ -242,7 +241,7 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves, this._leapControl.matrix);
+	this._vSim.render(this._fboCurrent.getTexture(), this.x.value, this.y.value, 150.0, this.waves, this._leapControl.invertMatrix);
 	this._fboTarget.unbind();
 
 
@@ -300,29 +299,35 @@ p.render = function() {
 	if(params.renderHands) {
 		for(var i=0; i<this._pointers.length; i++) {
 			var p = this._pointers[i];
-
-			this._vSphere.render(p.pos, p.lengthNew > params.sphereSize ? [1.0, 1.0, 1.0] : [1.0, .6, .2]);	
+			var grey = .4;
+			this._vSphere.render(p.pos, p.lengthNew > params.sphereSize ? [1.0, 1.0, 1.0] : [grey, grey, grey*.96]);	
 		}	
 
-		this._vSphere.render(this.handLeft, [1, .5, 0]);
-		this._vSphere.render(this.handRight, [1, .5, 0]);
+		this._vSphere.render(this.handLeft, [205/255, 162/255, 80/255]);
+		this._vSphere.render(this.handRight, [205/255, 162/255, 80/255]);
 	}
 
 
-	if(Math.random() > .99) {
-		console.log(this._leapControl.matrix, this._leapControl.invertMatrix);
-	}
-	
 	if(params.renderParticles) {
+		this.uvOffset += 2/params.numParticles;
+		if(this.uvOffset > 1.0) {
+			this.uvOffset = 0.0;
+		}
+
 		GL.enableAdditiveBlending();
-		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, -1);
-		this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, -1);	
+		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, this._textureGold, this.uvOffset);
+		for(var i=0; i<5; i++ ) {
+			this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, this._textureGold, this.uvOffset, .003 * Math.pow(i, 2));
+			// this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, this._textureGold, this.uvOffset, .025 * i * i);		
+		}
+		
+		// this._vRender2.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._leapControl.matrix, this._textureGold, this.uvOffset, .1);	
 		GL.enableAlphaBlending();
 	}
 	
 	if(params.renderSphere) {
 		this._vGlobe.render(this.handLeft, this.handRight, this._pointers);	
-		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers, this._leapControl.matrix, -1);
+		this._vIcoSphere.render(this.handLeft, this.handRight, this._pointers, this._leapControl.matrix);
 	}
 	
 	if(params.debugFbo) {

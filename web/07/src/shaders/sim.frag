@@ -16,7 +16,7 @@ uniform float radius;
 uniform float aspectRatio;
 uniform float sphereSize;
 
-const float width = 128.0;
+const float width = 100.0;
 const float height = width;
 const float numParticles = width;
 const float maxRadius = 500.0;
@@ -104,7 +104,7 @@ void main(void) {
 			float grey = 0.0;
 			for(int i=0; i<NUM_WAVES; i++ ) {
 				vec3 wCenter = normalize(waveCenters[i]) * sphereSize;
-				wCenter = (leapMatrix * vec4(wCenter*-1.0, 1.0)).rgb;
+				wCenter = (leapMatrix * vec4(wCenter, 1.0)).rgb;
 				vec3 wHeights = waveHeights[i];
 				grey += getWave(pos, wCenter, wHeights.x, wHeights.y, wHeights.z);
 			}

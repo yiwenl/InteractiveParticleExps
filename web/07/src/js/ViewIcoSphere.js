@@ -8,8 +8,8 @@ var faces = [[21,15,10],[103,14,15],[15,21,103],[20,103,21],[104,13,14],[14,103,
 var glslify = require("glslify");
 
 function ViewIcoSphere() {
-	// bongiovi.View.call(this, glslify("../shaders/ico.vert"), bongiovi.ShaderLibs.get("simpleColorFrag"));
-	bongiovi.View.call(this, glslify("../shaders/ico.vert"), glslify("../shaders/globe.frag"));
+	bongiovi.View.call(this, glslify("../shaders/ico.vert"), bongiovi.ShaderLibs.get("simpleColorFrag"));
+	// bongiovi.View.call(this, glslify("../shaders/ico.vert"), glslify("../shaders/globe.frag"));
 }
 
 var p = ViewIcoSphere.prototype = new bongiovi.View();
@@ -52,42 +52,42 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(light0, light1, pointers, leapMatrix, leapDirection) {
-	var positions = [];
-	for(var i=0; i<10; i++) {
-		var p = pointers[i];
-		if (p) {
-			var l = glm.vec3.length(p.pos);
-			if(l > params.sphereSize || 1){
-				positions.push(p.pos[0]);
-				positions.push(p.pos[1]);
-				positions.push(p.pos[2]);	
-			} else {
-				positions.push(0);
-				positions.push(0);
-				positions.push(0);	
-			}
+p.render = function(light0, light1, pointers, leapMatrix) {
+	// var positions = [];
+	// for(var i=0; i<10; i++) {
+	// 	var p = pointers[i];
+	// 	if (p) {
+	// 		var l = glm.vec3.length(p.pos);
+	// 		if(l > params.sphereSize || 1){
+	// 			positions.push(p.pos[0]);
+	// 			positions.push(p.pos[1]);
+	// 			positions.push(p.pos[2]);	
+	// 		} else {
+	// 			positions.push(0);
+	// 			positions.push(0);
+	// 			positions.push(0);	
+	// 		}
 			
-		} else {
-			positions.push(0);
-			positions.push(0);
-			positions.push(0);
-		}
-	}
+	// 	} else {
+	// 		positions.push(0);
+	// 		positions.push(0);
+	// 		positions.push(0);
+	// 	}
+	// }
 
 	this.shader.bind();
 	gl.lineWidth(.5);
-	this.shader.uniform("color", "uniform3fv", [1, 1, .95]);
-	this.shader.uniform("opacity", "uniform1f", .5);
+	// this.shader.uniform("color", "uniform3fv", [205/255/2, 162/255/2, 80/255/2]);
+	this.shader.uniform("color", "uniform3fv", [1, 1, 1]);
+	this.shader.uniform("opacity", "uniform1f", .25);
 	this.shader.uniform("sphereSize", "uniform1f", params.sphereSize-4);
 	this.shader.uniform("leapMatrix", "uniformMatrix4fv", leapMatrix);
-	this.shader.uniform("leapDirection", "uniform1f", leapDirection);
-	this.shader.uniform("light0", "uniform3fv", light0);
-	this.shader.uniform("light1", "uniform3fv", light1);
-	this.shader.uniform("pointers", "uniform3fv", positions);
-	var ambient = .5;
-	this.shader.uniform("ambient", "uniform3fv", [ambient, ambient, ambient]);
-	this.shader.uniform("lightAmount", "uniform1f", 0.5);
+	// this.shader.uniform("light0", "uniform3fv", light0);
+	// this.shader.uniform("light1", "uniform3fv", light1);
+	// this.shader.uniform("pointers", "uniform3fv", positions);
+	// var ambient = .5;
+	// this.shader.uniform("ambient", "uniform3fv", [ambient, ambient, ambient]);
+	// this.shader.uniform("lightAmount", "uniform1f", 0.5);
 	GL.draw(this.mesh);
 };
 

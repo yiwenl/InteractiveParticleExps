@@ -10,9 +10,11 @@ uniform mat4 leapMatrix;
 uniform float leapDirection;
 uniform sampler2D texture;
 uniform sampler2D textureNext;
-uniform sampler2D texturePortrait;
+uniform sampler2D textureGold;
 uniform vec2 dimension;
 uniform float progress;
+uniform float time;
+uniform float scale;
 uniform float percent;
 varying vec2 vTextureCoord;
 varying vec4 vColor;
@@ -51,10 +53,10 @@ void main(void) {
 	flashing     	= mix((sin(flashing) + 1.0) * .5, 1.0, .85);
 	// flashing        = (sin(flashing) + 1.0) * .5;
 	
-	float scale     = 1.0 + debug.r * .025;
-	pos             *= scale;
+	float posScale  = 1.0 + debug.r * scale;
+	pos             *= posScale;
 	
-	vec4 V          = uPMatrix * uMVMatrix * leapMatrix * vec4(pos*leapDirection, 1.0);
+	vec4 V          = uPMatrix * uMVMatrix * leapMatrix * vec4(pos, 1.0);
 	gl_Position     = V;
 	
 	vTextureCoord   = aTextureCoord;
@@ -62,5 +64,9 @@ void main(void) {
 	float p         = length(vel) / 3.0;
 	
 	gl_PointSize    = .5 + p * 1. + debug.r * 1.;
-	vColor          = vec4(vec3(flashing), mix(p, 1.0, .5));
+
+	vec2 uvColor 	= aTextureCoord + vec2(time, .0);
+	if(uvColor.x > 1.0) uvColor.x -= 1.0;
+	vec3 colorGold 	= texture2D(textureGold, uvColor).rgb;
+	vColor          = vec4(colorGold*(1.0-scale * 5.0), mix(p, 1.0, .5));
 }

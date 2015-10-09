@@ -14,7 +14,8 @@ uniform float lightAmount;
 uniform float opacity;
 
 // const vec3 ambient = vec3(.0);
-const vec3 lightColor = vec3(1.0, 1.0, .926);
+// const vec3 lightColor = vec3(1.0, 1.0, .926);
+const vec3 lightColor = vec3(233.0, 226.0, 196.0)/255.0;
 const vec3 lightColorFront = vec3(.986, .986, 1.0);
 // const float lightAmount = .03;
 
@@ -32,7 +33,7 @@ void main(void) {
 
 	vec3 color = ambient + lambert0 * lightColor * lightAmount + lambert1 * lightColor * lightAmount + lambert2 * lightColorFront * .3;
 
-	float minRadius = 50.0;
+	float minRadius = 80.0;
 	for(int i=0; i<NUM_POINTERS; i++) {
 		vec3 p = pointers[i];
 		float d = distance(p, vVertex);
@@ -41,7 +42,7 @@ void main(void) {
 			vec3 n = normalize(vec3(p) - vVertex);
 			float lambert = max(dot(n, vNormal), 0.0);
 
-			color += lightColor * lambert * (1.0 - d/minRadius) * .3;
+			color += lightColor * lambert * (1.0 - d/minRadius) * .35;
 		}
 	}
 

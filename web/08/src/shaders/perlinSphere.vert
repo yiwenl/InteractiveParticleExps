@@ -19,6 +19,7 @@ varying vec2 vTextureCoord;
 varying vec3 vVertex;
 varying vec3 vNormal;
 varying vec3 lightDir;
+varying float vScaleOffset;
 
 
 vec4 permute(vec4 x) { return mod(((x*34.00)+1.00)*x, 289.00); }
@@ -105,4 +106,5 @@ void main(void) {
 
 	vNormal 	  = aNormal;
 	// lightDir 	  = avoidCenter;
+	vScaleOffset  = offset;
 }

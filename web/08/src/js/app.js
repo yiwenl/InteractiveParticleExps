@@ -2,7 +2,7 @@
 window.bongiovi = require("./libs/bongiovi.js");
 var dat = require("dat-gui");
 window.params = {
-	sphereSize:500
+	sphereSize:250
 };
 
 (function() {

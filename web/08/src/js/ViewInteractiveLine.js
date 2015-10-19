@@ -12,7 +12,7 @@ function ViewInteractiveLine(objPath, size, color, opacity, isPerlin) {
 	this.seed = Math.random() * 0xFFFF;
 
 	if(isPerlin) {
-		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/additiveColor.frag"));
+		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/interactiveSphere.frag"));
 	} else {
 		bongiovi.View.call(this, glslify("../shaders/interactiveSphere.vert"), glslify("../shaders/additiveColor.frag"));
 	}
@@ -74,13 +74,14 @@ p._onObjLoaded = function(mesh, o) {
 };
 
 
-p.render = function(avoidCenter) {
+p.render = function(avoidCenter, avoidCenter2) {
 	if(!this.mesh ) return;
 	
 	this.shader.bind();
 	this.shader.uniform("color", "uniform3fv", this.color);
 	this.shader.uniform("seed", "uniform1f", this.seed);
 	this.shader.uniform("avoidCenter", "uniform3fv", avoidCenter||[999,999,9999]);
+	this.shader.uniform("avoidCenter2", "uniform3fv", avoidCenter2||[999,999,9999]);
 	this.shader.uniform("opacity", "uniform1f", this.opacity);
 	this.shader.uniform("size", "uniform1f", this.size);
 	GL.draw(this.mesh);

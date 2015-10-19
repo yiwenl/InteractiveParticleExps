@@ -16,7 +16,7 @@ function ViewInteractiveDot(objPath, size, color, opacity, isPerlin) {
 	
 
 	if(isPerlin) {
-		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/dots.frag"));
+		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/interactiveDot.frag"));
 	} else {
 		bongiovi.View.call(this, glslify("../shaders/interactiveSphereDot.vert"), glslify("../shaders/dots.frag"));
 	}
@@ -52,7 +52,7 @@ p._onObjLoaded = function(mesh, o) {
 };
 
 
-p.render = function(avoidCenter) {
+p.render = function(avoidCenter, avoidCenter2) {
 	if(!this.mesh ) return;
 	this.shader.bind();
 
@@ -62,6 +62,7 @@ p.render = function(avoidCenter) {
 	this.shader.uniform("pointSize", "uniform1f", this.pointSize);
 	this.shader.uniform("seed", "uniform1f", this.seed);
 	this.shader.uniform("avoidCenter", "uniform3fv", avoidCenter||[999,999,9999]);
+	this.shader.uniform("avoidCenter2", "uniform3fv", avoidCenter2||[999,999,9999]);
 	GL.draw(this.mesh);
 };
 

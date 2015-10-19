@@ -11,11 +11,13 @@ uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform float size;
 uniform vec3 avoidCenter;
+uniform vec3 avoidCenter2;
 
 varying vec2 vTextureCoord;
 varying vec3 vVertex;
 varying vec3 vNormal;
 varying vec3 lightDir;
+varying float vScaleOffset;
 
 float exponentialIn(float t) {
   return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));
@@ -25,10 +27,15 @@ void main(void) {
 	vec3 pos              = aVertexPosition;
 	vec3 centerPos        = aExtra;
 	float offset          = 1.0;
-	const float minRadius = 300.0;
+	const float minRadius = 350.0;
 	float dist = distance(centerPos, avoidCenter);
 	if(dist < minRadius) {
-		offset = dist/minRadius;
+		offset *= dist/minRadius;
+	}
+
+	dist = distance(centerPos, avoidCenter2);
+	if(dist < minRadius) {
+		offset *= dist/minRadius;
 	}
 
 	pos 		  = mix(aExtra, pos, exponentialIn(offset));
@@ -39,4 +46,6 @@ void main(void) {
 	vVertex       = pos;
 
 	vNormal 	  = aNormal;
+	vScaleOffset  = offset;
+
 }

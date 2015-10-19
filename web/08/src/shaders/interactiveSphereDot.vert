@@ -26,7 +26,7 @@ void main(void) {
 	vec3 pos              = aVertexPosition;
 	vec3 centerPos        = aExtra;
 	float offset          = 1.0;
-	const float minRadius = 300.0;
+	const float minRadius = 350.0;
 	float dist = distance(centerPos, avoidCenter);
 	if(dist < minRadius) {
 		offset = dist/minRadius;
@@ -42,5 +42,5 @@ void main(void) {
 	vNormal 	  = aNormal;
 	lightDir 	  = avoidCenter;
 
-	gl_PointSize = pointSize;
+	gl_PointSize = pointSize * exponentialIn(offset);
 }

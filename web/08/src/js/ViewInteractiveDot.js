@@ -9,14 +9,14 @@ function ViewInteractiveDot(objPath, size, color, opacity, isPerlin) {
 	this.color = color === undefined ? [1, 1, 1] : color;
 	this.opacity = opacity === undefined ? 1 : opacity;
 	this.objPath = objPath;
-	this.pointSize = 5.0;
+	this.pointSize = 2.0;
 	this.seed = 0;
 
 	// bongiovi.View.call(this, glslify("../shaders/interactiveSphere.vert"), glslify("../shaders/additiveColor.frag"));
 	
 
 	if(isPerlin) {
-		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/interactiveDot.frag"));
+		bongiovi.View.call(this, glslify("../shaders/perlinSphereDot.vert"), glslify("../shaders/interactiveDot.frag"));
 	} else {
 		bongiovi.View.call(this, glslify("../shaders/interactiveSphereDot.vert"), glslify("../shaders/dots.frag"));
 	}

@@ -27,6 +27,7 @@ function SceneApp() {
 	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 2500);
 	this.camera.radius.value = 750;
 	this.camera._rx.value = -.3;
+	this.invert = glm.mat4.create();
 
 	// this.sceneRotation.lock(true);
 	this._initLeap();
@@ -167,19 +168,9 @@ p._initViews = function() {
 
 
 	var radius1 = params.sphereSize * .8;
-	var radius2 = params.sphereSize * .6;
+	// var radius2 = params.sphereSize * .6;
 	var radius3 = params.sphereSize * .7;
-	var radius4 = params.sphereSize * .75;
-
-	//	RADIUS 2 GROUP
-	this._vSphere = new ViewSphere(radius2-2);
-	this._vSphere.opacity = .25;
-	this._vLineSphere = new ViewLineSphere("assets/sphere24.obj", radius2, [1, 1, 1]);
-	this._vLineSphere.opacity = .1;
-	this._vLineSphere48 = new ViewLineSphere("assets/sphere60.obj", radius2, [.75, .95, .9], "../shaders/lineSphere.frag");
-	this._vLineSphere48.opacity = .25;
-	this._vSphereDot2 = new ViewSphereDots("assets/sphere24.obj", radius2, [1, 1, 1], 1);
-	this._vSphereDot2.pointSize = 5.0;
+	var radius4 = params.sphereSize * .65;
 
 
 	//	RADIUS 1 GROUP
@@ -220,32 +211,24 @@ p._checkTouched = function() {
 
 		p.lengthOld = lOld;
 		p.lengthNew = lNew;
-		if(lOld > params.sphereSize && lNew < params.sphereSize * 2.0) {
-			// var wh = Math.random() * .5 + .5;
-			// var r = 1;
-			// var w = new Wave(glm.vec3.clone(p.pos), wh*.75 + .5, wh);
-			// this.waves.push(w);
-			// if(this.waves.length > params.numWaves) this.waves.shift();
-		}
 	}
 };
 
 
 p.render = function() {
-	this._checkTouched();
-	// this.camera._rx.value = (Math.sin(this.frame*.17454) + Math.cos(this.frame*.328675)) * .2;
-	// this.camera._ry.value += .005;
-	var r = params.sphereSize * .85;
-	this.circlePos[0] = r * Math.cos(this.frame);
-	this.circlePos[1] = 50 * Math.cos(this.frame*.3489705098 + Math.sin(this.frame * .7));
-	this.circlePos[2] = r * Math.sin(this.frame);
-	// this.dot.render(this.circlePos);
-	// GL.rotate(this.rotationFront);
-	// this._vDotPlane.render();
+	var hl = glm.vec3.clone(this.handLeft);
+	var hr = glm.vec3.clone(this.handRight);
+	var inv = glm.vec3.fromValues(-1, -1, 1);
+	glm.mat4.invert(this.invert, this.sceneRotation.matrix);
+	glm.vec3.mul(hl, hl, inv);
+	glm.vec3.mul(hr, hr, inv);
+	glm.vec3.transformMat4(hl, hl, this.invert);
+	glm.vec3.transformMat4(hr, hr, this.invert);
 
-	this.dot.render(this.handLeft);
-	// console.log(this.handRight);
-	this.dot.render(this.handRight);
+	this._checkTouched();
+
+	this.dot.render(hl);
+	this.dot.render(hr);
 
 	this.frame += .01;
 
@@ -261,9 +244,9 @@ p.render = function() {
 	//*/
 	//	GROUP 2
 	this._vDots.render();
-	this._vSphereDot1.render(this.handRight, this.handLeft);
-	this._vInterSphere1.render(this.handRight, this.handLeft);
-	this._vInterLine1.render(this.handRight, this.handLeft);
+	this._vSphereDot1.render(hr, hl);
+	this._vInterSphere1.render(hr, hl);
+	this._vInterLine1.render(hr, hl);
 	//*/
 
 	//*/

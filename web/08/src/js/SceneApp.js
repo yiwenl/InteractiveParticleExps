@@ -1,16 +1,18 @@
 // SceneApp.js
 
-var GL = bongiovi.GL, gl;
-var ViewSphere = require("./ViewSphere");
-var ViewLineSphere = require("./ViewLineSphere");
-var ViewDots = require("./ViewDots");
+var GL                    = bongiovi.GL, gl;
+var ViewSphere            = require("./ViewSphere");
+var ViewLineSphere        = require("./ViewLineSphere");
+var ViewDots              = require("./ViewDots");
 var ViewInteractiveSphere = require("./ViewInteractiveSphere");
-var ViewSphereDots = require("./ViewSphereDots");
-var ViewInteractiveLine = require("./ViewInteractiveLine");
-var ViewSingleDot = require("./ViewSingleDot");
+var ViewSphereDots        = require("./ViewSphereDots");
+var ViewInteractiveLine   = require("./ViewInteractiveLine");
+var ViewSingleDot         = require("./ViewSingleDot");
+var ViewInteractiveDot    = require("./ViewInteractiveDot");
 
 function SceneApp() {
 	this.frame = 0;
+	this.seed = Math.random() * 0xFFFF;
 	this.circlePos = [0, 0, 0];
 	gl = GL.gl;
 	GL.enableAdditiveBlending();
@@ -39,6 +41,7 @@ p._initViews = function() {
 
 	var radius1 = params.sphereSize * .8;
 	var radius2 = params.sphereSize * .6;
+	var radius3 = params.sphereSize * .7;
 
 	//	RADIUS 2 GROUP
 	this._vSphere = new ViewSphere(radius2-2);
@@ -54,11 +57,18 @@ p._initViews = function() {
 	//	RADIUS 1 GROUP
 	this._vDots = new ViewDots(radius1+2);
 	this._vDots.color = [0.85, .95, .9];
-	this._vSphereDot1 = new ViewSphereDots("assets/sphere24.obj", radius1, [1, 1, 1], 1);
-	this._vSphereDot1.pointSize = 5.0;
+	this._vSphereDot1 = new ViewInteractiveDot("assets/sphere24.obj", radius1, [1, 1, 1], 1);
+	this._vSphereDot1.pointSize = 3.0;
 	this._vInterLine1 = new ViewInteractiveLine("assets/sphere24.obj", radius1, [1, 1, 1], .25);
+	this._vInterSphere1 = new ViewInteractiveSphere("assets/sphere24.obj", radius1, [0.1, .45, .47], .75);
 
-	this._vInterSphere1 = new ViewInteractiveSphere("assets/sphere24.obj", radius1, [0.1, .45, .47], .5);
+
+	//	RADIUS 3 GROUP
+	this._vInterSphere2 = new ViewInteractiveSphere("assets/sphere72.obj", radius3, [0.1, .45, .47], .25, true);
+	this._vInterLine2 = new ViewInteractiveLine("assets/sphere72.obj", radius3, [1, 1, 1], .25, true);
+	this._vInterDot2 = new ViewInteractiveDot("assets/sphere72.obj", radius3, [1, 1, 1], .5, true);
+	this._vInterDot2.pointSize = 2.0;
+	
 };
 
 p.render = function() {
@@ -73,16 +83,27 @@ p.render = function() {
 	this.frame += .01;
 	
 	//*/
+	//	GROUP 1 
 	this._vSphere.render();
 	this._vLineSphere.render();
 	this._vLineSphere48.render();
 	this._vSphereDot2.render();
 	//*/
 
+	//*/
+	//	GROUP 2
 	this._vDots.render();
-	this._vSphereDot1.render();
+	this._vSphereDot1.render(this.circlePos);
 	this._vInterSphere1.render(this.circlePos);
 	this._vInterLine1.render(this.circlePos);
+	//*/
+
+	//	GROUP 3
+	this.seed += .0015;
+	this._vInterSphere2.seed = this._vInterLine2.seed = this._vInterDot2.seed = this.seed;
+	this._vInterSphere2.render();
+	this._vInterLine2.render();
+	this._vInterDot2.render();
 };
 
 p.resize = function() {

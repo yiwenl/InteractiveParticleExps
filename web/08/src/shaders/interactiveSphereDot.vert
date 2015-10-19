@@ -10,6 +10,7 @@ attribute vec3 aExtra;
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform float size;
+uniform float pointSize;
 uniform vec3 avoidCenter;
 
 varying vec2 vTextureCoord;
@@ -39,4 +40,7 @@ void main(void) {
 	vVertex       = pos;
 
 	vNormal 	  = aNormal;
+	lightDir 	  = avoidCenter;
+
+	gl_PointSize = pointSize;
 }

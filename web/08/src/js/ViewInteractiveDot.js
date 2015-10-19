@@ -1,32 +1,35 @@
-// ViewInteractiveSphere.js
+// ViewInteractiveDot.js
 
 var GL = bongiovi.GL;
 var gl;
 var glslify = require("glslify");
 
-function ViewInteractiveSphere(objPath, size, color, opacity, isPerlin) {
+function ViewInteractiveDot(objPath, size, color, opacity, isPerlin) {
 	this.size = size === undefined ? 100 : size;
 	this.color = color === undefined ? [1, 1, 1] : color;
 	this.opacity = opacity === undefined ? 1 : opacity;
 	this.objPath = objPath;
-	this.seed = Math.random() * 0xFFFF;
+	this.pointSize = 5.0;
+	this.seed = 0;
+
+	// bongiovi.View.call(this, glslify("../shaders/interactiveSphere.vert"), glslify("../shaders/additiveColor.frag"));
+	
 
 	if(isPerlin) {
-		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/additiveColor.frag"));
+		bongiovi.View.call(this, glslify("../shaders/perlinSphere.vert"), glslify("../shaders/dots.frag"));
 	} else {
-		bongiovi.View.call(this, glslify("../shaders/interactiveSphere.vert"), glslify("../shaders/interSphere.frag"));	
+		bongiovi.View.call(this, glslify("../shaders/interactiveSphereDot.vert"), glslify("../shaders/dots.frag"));
 	}
-	
 }
 
-var p = ViewInteractiveSphere.prototype = new bongiovi.View();
-p.constructor = ViewInteractiveSphere;
+var p = ViewInteractiveDot.prototype = new bongiovi.View();
+p.constructor = ViewInteractiveDot;
 
 
 p._init = function() {	
 	gl = GL.gl;
 	var loader = new bongiovi.ObjLoader();
-	loader.load(this.objPath, this._onObjLoaded.bind(this), null, false);
+	loader.load(this.objPath, this._onObjLoaded.bind(this), null, false, gl.POINTS);
 };
 
 p._onObjLoaded = function(mesh, o) {
@@ -48,6 +51,7 @@ p._onObjLoaded = function(mesh, o) {
 	this.mesh.bufferData(extra, "aExtra", 3);
 };
 
+
 p.render = function(avoidCenter) {
 	if(!this.mesh ) return;
 	this.shader.bind();
@@ -55,9 +59,10 @@ p.render = function(avoidCenter) {
 	this.shader.uniform("color", "uniform3fv", this.color);
 	this.shader.uniform("opacity", "uniform1f", this.opacity);
 	this.shader.uniform("size", "uniform1f", this.size);
+	this.shader.uniform("pointSize", "uniform1f", this.pointSize);
 	this.shader.uniform("seed", "uniform1f", this.seed);
 	this.shader.uniform("avoidCenter", "uniform3fv", avoidCenter||[999,999,9999]);
 	GL.draw(this.mesh);
 };
 
-module.exports = ViewInteractiveSphere;
+module.exports = ViewInteractiveDot;

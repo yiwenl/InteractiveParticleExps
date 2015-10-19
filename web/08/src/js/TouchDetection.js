@@ -51,7 +51,7 @@ p._init = function() {
 
 	this.mouse = glm.vec3.create();
 
-	window.addEventListener("mousemove", this._onMove.bind(this));
+	// window.addEventListener("mousemove", this._onMove.bind(this));
 };
 
 
@@ -68,7 +68,7 @@ p._onMove = function(e) {
 	var vNear = glm.vec3.unproject(this.mouse, view, proj, this.viewport);
 	this.mouse[2] = 1;
 	var vFar = glm.vec3.unproject(this.mouse, view, proj, this.viewport);
-	console.log(vNear, vFar);
+	// console.log(vNear, vFar);
 
 	for(var i=0; i<this._vertices.length; i++) {
 		

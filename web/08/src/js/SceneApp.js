@@ -11,7 +11,12 @@ var ViewInteractiveLine   = require("./ViewInteractiveLine");
 var ViewSingleDot         = require("./ViewSingleDot");
 var ViewInteractiveDot    = require("./ViewInteractiveDot");
 var LeapControl           = require("./LeapControl");
-var TouchDetection 		  = require("./TouchDetection");
+var TouchDetection        = require("./TouchDetection");
+
+var ViewSave              = require("./ViewSave");
+var ViewRender            = require("./ViewRender");
+var ViewSimulation        = require("./ViewSimulation");
+var ViewPost              = require("./ViewPost");
 
 var yOffset = -250;
 var zOffset = 100;
@@ -159,6 +164,20 @@ p._checkPointers = function(pointer) {
 
 p._initTextures = function() {
 	console.log('Init Textures');
+
+	var num = params.numParticles;
+	var o = {
+		minFilter:gl.NEAREST,
+		magFilter:gl.NEAREST
+	}
+	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
+
+	var scale 			= 2.0;
+	this._fboRender		= new bongiovi.FrameBuffer(GL.width*scale, GL.height*scale);
+
+	this._textureGrd 	= new bongiovi.GLTexture(images.gradient);
+	this._textureGrdMap = new bongiovi.GLTexture(images.gradientMap);
 };
 
 p._initViews = function() {
@@ -174,6 +193,21 @@ p._initViews = function() {
 	var radius3 = params.sphereSize * .7;
 	var radius4 = params.sphereSize * .65;
 
+	//	PARTICLES
+	this._vSave     = new ViewSave();
+	this._vRender 	= new ViewRender();
+	this._vSim 		= new ViewSimulation();
+	this._vCopy 	= new bongiovi.ViewCopy();
+	this._vPost 	= new ViewPost();
+
+	GL.setMatrices(this.cameraOtho);
+	GL.rotate(this.rotationFront);
+
+	this._fboCurrent.bind();
+	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
+	this._vSave.render();
+	this._fboCurrent.unbind();
+
 
 	//	RADIUS 1 GROUP
 	this._vDots = new ViewDots(radius1+2);
@@ -185,7 +219,7 @@ p._initViews = function() {
 
 
 	//	RADIUS 3 GROUP
-	this._vInterSphere2 = new ViewInteractiveSphere("assets/sphere60.obj", radius3, [0.1, .45, .47], .25, true);
+	this._vInterSphere2 = new ViewInteractiveSphere("assets/sphere60.obj", radius3, [0.1, .45, .47], .5, true);
 	this._vInterLine2 = new ViewInteractiveLine("assets/sphere60.obj", radius3, [1, 1, 1], .25, true);
 	this._vInterDot2 = new ViewInteractiveDot("assets/sphere60.obj", radius3, [1, 1, 1], .5, true);
 	this._vInterDot2.pointSize = 2.0;
@@ -216,8 +250,29 @@ p._checkTouched = function() {
 	}
 };
 
+p.updateFbo = function() {
+	GL.setMatrices(this.cameraOtho);
+	GL.rotate(this.rotationFront);
+
+	this._fboTarget.bind();
+	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
+	GL.clear(0, 0, 0, 0);
+	this._vSim.render(this._fboCurrent.getTexture() );
+	this._fboTarget.unbind();
+
+
+	var tmp = this._fboTarget;
+	this._fboTarget = this._fboCurrent;
+	this._fboCurrent = tmp;
+
+
+	GL.setMatrices(this.camera);
+	GL.rotate(this.sceneRotation.matrix);		
+	GL.setViewport(0, 0, GL.width, GL.height);
+};
 
 p.render = function() {
+	this.updateFbo();
 	var hl = glm.vec3.clone(this.handLeft);
 	var hr = glm.vec3.clone(this.handRight);
 	var inv = glm.vec3.fromValues(-1, -1, 1);
@@ -229,11 +284,19 @@ p.render = function() {
 
 	this._checkTouched();
 
+
+	this._fboRender.bind();
+	GL.setViewport(0, 0, this._fboRender.width, this._fboRender.height);
+	GL.enableAdditiveBlending();
+	GL.clear(0, 0, 0, 0);
 	this.dot.render(hl);
 	this.dot.render(hr);
 
 	this.frame += .01;
 
+
+	//	PARTICLE
+	this._vRender.render(this._fboCurrent.getTexture());
 
 	//*/
 	//	GROUP 2
@@ -259,6 +322,16 @@ p.render = function() {
 	this._vInterLine3.render();
 	this._vInterDot3.render();
 	//*/
+
+	this._fboRender.unbind();
+
+
+	GL.setMatrices(this.cameraOrtho);
+	GL.rotate(this.rotationFront);
+	GL.setViewport(0, 0, GL.width, GL.height);
+	// this._vCopy.render(this._fboRender.getTexture());
+	GL.enableAlphaBlending();
+	this._vPost.render(this._fboRender.getTexture(), this._textureGrd, this._textureGrdMap);
 };
 
 p.resize = function() {

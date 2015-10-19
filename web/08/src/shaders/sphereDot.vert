@@ -21,5 +21,5 @@ void main(void) {
 	vTextureCoord = aTextureCoord;
 	vVertex       = pos;
 
-	gl_PointSize  = 1.0 + aTextureCoord.x * 3.0;
+	gl_PointSize  = 2.0 + aTextureCoord.x * 4.0;
 }

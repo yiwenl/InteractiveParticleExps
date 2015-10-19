@@ -2,20 +2,31 @@
 window.bongiovi = require("./libs/bongiovi.js");
 var dat = require("dat-gui");
 window.params = {
-	sphereSize:250
+	sphereSize:250,
+	numParticles:32,
+	skipCount:5
 };
 
 (function() {
 	var SceneApp = require("./SceneApp");
 
 	App = function() {
+
+		var assets = ["assets/gradient.jpg", "assets/gradientMap.jpg"]
+		var loader = new bongiovi.SimpleImageLoader();
+		loader.load(assets, this, this._onImageLoaded);
+	}
+
+	var p = App.prototype;
+
+	p._onImageLoaded = function(img) {
+		window.images = img;
+		console.log(window.images);
 		if(document.body) this._init();
 		else {
 			window.addEventListener("load", this._init.bind(this));
 		}
-	}
-
-	var p = App.prototype;
+	};
 
 	p._init = function() {
 		this.canvas = document.createElement("canvas");

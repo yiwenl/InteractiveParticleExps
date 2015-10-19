@@ -75,14 +75,21 @@ float rand(vec2 co){
 
 
 uniform float time;
+uniform vec3 windDir;
+uniform mat4 invert;
 
 void main(void) {
     if(vTextureCoord.y < .5) {
 		if(vTextureCoord.x < .5) {
+			vec2 uvVel = vTextureCoord + vec2(.5, .0);
 			vec3 pos = texture2D(texture, vTextureCoord).rgb;
+			vec3 vel = texture2D(texture, uvVel).rgb;
+			pos += vel;
+
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
-			gl_FragColor = vec4(0.0);	
+			vec3 w = (invert * vec4(windDir, 1.0)).rgb;
+			gl_FragColor = vec4(w*.2, 1.0);	
 		}
     } else {
     	gl_FragColor = vec4(0.0);

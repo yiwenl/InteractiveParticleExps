@@ -4767,8 +4767,10 @@ p._initTextures = function() {
 	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 
-	var scale 			= 2.0;
-	this._fboRender		= new bongiovi.FrameBuffer(GL.width*scale, GL.height*scale);
+	var scale 			= 2;
+	var w 				= Math.min(1920 * scale, GL.width * scale);
+	var h 				= w / GL.aspectRatio;
+	this._fboRender		= new bongiovi.FrameBuffer(w, h);
 
 	this._textureGrd 	= new bongiovi.GLTexture(images.gradient);
 	this._textureGrdMap = new bongiovi.GLTexture(images.gradientMap);
@@ -4851,7 +4853,8 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture() );
+	this._vSim.render(this._fboCurrent.getTexture() , this.invert);
+	// this._vSim.render(this._fboCurrent.getTexture() , this.sceneRotation.matrix);
 	this._fboTarget.unbind();
 
 
@@ -4866,7 +4869,7 @@ p.updateFbo = function() {
 };
 
 p.render = function() {
-	this.updateFbo();
+	
 	var hl = glm.vec3.clone(this.handLeft);
 	var hr = glm.vec3.clone(this.handRight);
 	var inv = glm.vec3.fromValues(-1, -1, 1);
@@ -4878,6 +4881,7 @@ p.render = function() {
 
 	this._checkTouched();
 
+	this.updateFbo();
 
 	this._fboRender.bind();
 	GL.setViewport(0, 0, this._fboRender.width, this._fboRender.height);
@@ -4931,6 +4935,10 @@ p.render = function() {
 p.resize = function() {
 	GL.setSize(window.innerWidth, window.innerHeight);
 	this.camera.resize(GL.aspectRatio);
+	var scale 			= 2;
+	var w 				= Math.min(1920 * scale, GL.width * scale);
+	var h 				= w / GL.aspectRatio;
+	this._fboRender		= new bongiovi.FrameBuffer(w, h);
 };
 
 module.exports = SceneApp;
@@ -5424,7 +5432,7 @@ var gl;
 
 
 function ViewRender() {
-	bongiovi.View.call(this, "#define GLSLIFY 1\n\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aTextureCoord * .5;\n\tpos.xyz = texture2D(texture, uv).rgb;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n}", "#define GLSLIFY 1\n\nprecision mediump float;\n\nvarying vec3 vColor;\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, 1.0);\n    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aTextureCoord * .5;\n\tpos.xyz = texture2D(texture, uv).rgb;\n    gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 5.0;\n    vColor = vec3(1.0);\n}", "#define GLSLIFY 1\n\nprecision mediump float;\n\nvarying vec3 vColor;\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, 1.0);\n    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}");
 }
 
 var p = ViewRender.prototype = new bongiovi.View();
@@ -5527,11 +5535,13 @@ module.exports = ViewSave;
 
 var GL = bongiovi.GL;
 var gl;
+var glm = bongiovi.glm;
 
 
 function ViewSimulation() {
 	this._count = Math.random() * 0xFF;
-	bongiovi.View.call(this, null, "#define GLSLIFY 1\n\n// sim.frag\n\nprecision mediump float;\nuniform sampler2D texture;\nvarying vec2 vTextureCoord;\n\n\nvec4 permute(vec4 x) { return mod(((x*34.00)+1.00)*x, 289.00); }\nvec4 taylorInvSqrt(vec4 r) { return 1.79 - 0.85 * r; }\n\nfloat snoise(vec3 v){\n\tconst vec2 C = vec2(1.00/6.00, 1.00/3.00) ;\n\tconst vec4 D = vec4(0.00, 0.50, 1.00, 2.00);\n\t\n\tvec3 i = floor(v + dot(v, C.yyy) );\n\tvec3 x0 = v - i + dot(i, C.xxx) ;\n\t\n\tvec3 g = step(x0.yzx, x0.xyz);\n\tvec3 l = 1.00 - g;\n\tvec3 i1 = min( g.xyz, l.zxy );\n\tvec3 i2 = max( g.xyz, l.zxy );\n\t\n\tvec3 x1 = x0 - i1 + 1.00 * C.xxx;\n\tvec3 x2 = x0 - i2 + 2.00 * C.xxx;\n\tvec3 x3 = x0 - 1. + 3.00 * C.xxx;\n\t\n\ti = mod(i, 289.00 );\n\tvec4 p = permute( permute( permute( i.z + vec4(0.00, i1.z, i2.z, 1.00 )) + i.y + vec4(0.00, i1.y, i2.y, 1.00 )) + i.x + vec4(0.00, i1.x, i2.x, 1.00 ));\n\t\n\tfloat n_ = 1.00/7.00;\n\tvec3 ns = n_ * D.wyz - D.xzx;\n\t\n\tvec4 j = p - 49.00 * floor(p * ns.z *ns.z);\n\t\n\tvec4 x_ = floor(j * ns.z);\n\tvec4 y_ = floor(j - 7.00 * x_ );\n\t\n\tvec4 x = x_ *ns.x + ns.yyyy;\n\tvec4 y = y_ *ns.x + ns.yyyy;\n\tvec4 h = 1.00 - abs(x) - abs(y);\n\t\n\tvec4 b0 = vec4( x.xy, y.xy );\n\tvec4 b1 = vec4( x.zw, y.zw );\n\t\n\tvec4 s0 = floor(b0)*2.00 + 1.00;\n\tvec4 s1 = floor(b1)*2.00 + 1.00;\n\tvec4 sh = -step(h, vec4(0.00));\n\t\n\tvec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n\tvec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\t\n\tvec3 p0 = vec3(a0.xy,h.x);\n\tvec3 p1 = vec3(a0.zw,h.y);\n\tvec3 p2 = vec3(a1.xy,h.z);\n\tvec3 p3 = vec3(a1.zw,h.w);\n\t\n\tvec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n\tp0 *= norm.x;\n\tp1 *= norm.y;\n\tp2 *= norm.z;\n\tp3 *= norm.w;\n\t\n\tvec4 m = max(0.60 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.00);\n\tm = m * m;\n\treturn 42.00 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );\n}\n\nfloat snoise(float x, float y, float z){\n\treturn snoise(vec3(x, y, z));\n}\n\nfloat rand(vec2 co){\n    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);\n}\n\n\nuniform float time;\n\nvoid main(void) {\n    if(vTextureCoord.y < .5) {\n\t\tif(vTextureCoord.x < .5) {\n\t\t\tvec3 pos = texture2D(texture, vTextureCoord).rgb;\n\t\t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\tgl_FragColor = vec4(0.0);\t\n\t\t}\n    } else {\n    \tgl_FragColor = vec4(0.0);\n    }\n}");
+	this.windDir = glm.vec3.create();
+	bongiovi.View.call(this, null, "#define GLSLIFY 1\n\n// sim.frag\n\nprecision mediump float;\nuniform sampler2D texture;\nvarying vec2 vTextureCoord;\n\n\nvec4 permute(vec4 x) { return mod(((x*34.00)+1.00)*x, 289.00); }\nvec4 taylorInvSqrt(vec4 r) { return 1.79 - 0.85 * r; }\n\nfloat snoise(vec3 v){\n\tconst vec2 C = vec2(1.00/6.00, 1.00/3.00) ;\n\tconst vec4 D = vec4(0.00, 0.50, 1.00, 2.00);\n\t\n\tvec3 i = floor(v + dot(v, C.yyy) );\n\tvec3 x0 = v - i + dot(i, C.xxx) ;\n\t\n\tvec3 g = step(x0.yzx, x0.xyz);\n\tvec3 l = 1.00 - g;\n\tvec3 i1 = min( g.xyz, l.zxy );\n\tvec3 i2 = max( g.xyz, l.zxy );\n\t\n\tvec3 x1 = x0 - i1 + 1.00 * C.xxx;\n\tvec3 x2 = x0 - i2 + 2.00 * C.xxx;\n\tvec3 x3 = x0 - 1. + 3.00 * C.xxx;\n\t\n\ti = mod(i, 289.00 );\n\tvec4 p = permute( permute( permute( i.z + vec4(0.00, i1.z, i2.z, 1.00 )) + i.y + vec4(0.00, i1.y, i2.y, 1.00 )) + i.x + vec4(0.00, i1.x, i2.x, 1.00 ));\n\t\n\tfloat n_ = 1.00/7.00;\n\tvec3 ns = n_ * D.wyz - D.xzx;\n\t\n\tvec4 j = p - 49.00 * floor(p * ns.z *ns.z);\n\t\n\tvec4 x_ = floor(j * ns.z);\n\tvec4 y_ = floor(j - 7.00 * x_ );\n\t\n\tvec4 x = x_ *ns.x + ns.yyyy;\n\tvec4 y = y_ *ns.x + ns.yyyy;\n\tvec4 h = 1.00 - abs(x) - abs(y);\n\t\n\tvec4 b0 = vec4( x.xy, y.xy );\n\tvec4 b1 = vec4( x.zw, y.zw );\n\t\n\tvec4 s0 = floor(b0)*2.00 + 1.00;\n\tvec4 s1 = floor(b1)*2.00 + 1.00;\n\tvec4 sh = -step(h, vec4(0.00));\n\t\n\tvec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n\tvec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\t\n\tvec3 p0 = vec3(a0.xy,h.x);\n\tvec3 p1 = vec3(a0.zw,h.y);\n\tvec3 p2 = vec3(a1.xy,h.z);\n\tvec3 p3 = vec3(a1.zw,h.w);\n\t\n\tvec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n\tp0 *= norm.x;\n\tp1 *= norm.y;\n\tp2 *= norm.z;\n\tp3 *= norm.w;\n\t\n\tvec4 m = max(0.60 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.00);\n\tm = m * m;\n\treturn 42.00 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );\n}\n\nfloat snoise(float x, float y, float z){\n\treturn snoise(vec3(x, y, z));\n}\n\nfloat rand(vec2 co){\n    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);\n}\n\n\nuniform float time;\nuniform vec3 windDir;\nuniform mat4 invert;\n\nvoid main(void) {\n    if(vTextureCoord.y < .5) {\n\t\tif(vTextureCoord.x < .5) {\n\t\t\tvec2 uvVel = vTextureCoord + vec2(.5, .0);\n\t\t\tvec3 pos = texture2D(texture, vTextureCoord).rgb;\n\t\t\tvec3 vel = texture2D(texture, uvVel).rgb;\n\t\t\tpos += vel;\n\n\t\t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\tvec3 w = (invert * vec4(windDir, 1.0)).rgb;\n\t\t\tgl_FragColor = vec4(w*.2, 1.0);\t\n\t\t}\n    } else {\n    \tgl_FragColor = vec4(0.0);\n    }\n}");
 }
 
 var p = ViewSimulation.prototype = new bongiovi.View();
@@ -5542,12 +5552,15 @@ p._init = function() {
 	this.mesh = bongiovi.MeshUtils.createPlane(2, 2, 1);
 };
 
-p.render = function(texture) {
-	if(!this.shader.isReady() ) return;
-
+p.render = function(texture, invert) {
 	this.shader.bind();
+	glm.vec3.set(this.windDir, -1, 0, 0);
+	// glm.vec3.transformMat4(this.windDir, this.windDir, invert);
+	// if(Math.random() > .9) console.log(this.windDir);
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("time", "uniform1f", this._count);
+	this.shader.uniform("windDir", "uniform3fv", this.windDir);
+	this.shader.uniform("invert", "uniformMatrix4fv", invert);
 	texture.bind(0);
 	GL.draw(this.mesh);
 

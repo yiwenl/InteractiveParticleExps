@@ -17,6 +17,6 @@ void main(void) {
     gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);
     vTextureCoord = aTextureCoord;
 
-    gl_PointSize = 1.0;
+    gl_PointSize = 5.0;
     vColor = vec3(1.0);
 }

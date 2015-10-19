@@ -173,8 +173,10 @@ p._initTextures = function() {
 	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 
-	var scale 			= 2.0;
-	this._fboRender		= new bongiovi.FrameBuffer(GL.width*scale, GL.height*scale);
+	var scale 			= 2;
+	var w 				= Math.min(1920 * scale, GL.width * scale);
+	var h 				= w / GL.aspectRatio;
+	this._fboRender		= new bongiovi.FrameBuffer(w, h);
 
 	this._textureGrd 	= new bongiovi.GLTexture(images.gradient);
 	this._textureGrdMap = new bongiovi.GLTexture(images.gradientMap);
@@ -257,7 +259,8 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture() );
+	this._vSim.render(this._fboCurrent.getTexture() , this.invert);
+	// this._vSim.render(this._fboCurrent.getTexture() , this.sceneRotation.matrix);
 	this._fboTarget.unbind();
 
 
@@ -272,7 +275,7 @@ p.updateFbo = function() {
 };
 
 p.render = function() {
-	this.updateFbo();
+	
 	var hl = glm.vec3.clone(this.handLeft);
 	var hr = glm.vec3.clone(this.handRight);
 	var inv = glm.vec3.fromValues(-1, -1, 1);
@@ -284,6 +287,7 @@ p.render = function() {
 
 	this._checkTouched();
 
+	this.updateFbo();
 
 	this._fboRender.bind();
 	GL.setViewport(0, 0, this._fboRender.width, this._fboRender.height);
@@ -337,6 +341,10 @@ p.render = function() {
 p.resize = function() {
 	GL.setSize(window.innerWidth, window.innerHeight);
 	this.camera.resize(GL.aspectRatio);
+	var scale 			= 2;
+	var w 				= Math.min(1920 * scale, GL.width * scale);
+	var h 				= w / GL.aspectRatio;
+	this._fboRender		= new bongiovi.FrameBuffer(w, h);
 };
 
 module.exports = SceneApp;

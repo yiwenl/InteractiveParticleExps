@@ -11,6 +11,7 @@ var ViewInteractiveLine   = require("./ViewInteractiveLine");
 var ViewSingleDot         = require("./ViewSingleDot");
 var ViewInteractiveDot    = require("./ViewInteractiveDot");
 var LeapControl           = require("./LeapControl");
+var TouchDetection 		  = require("./TouchDetection");
 
 var yOffset = -250;
 var zOffset = 100;
@@ -31,6 +32,7 @@ function SceneApp() {
 
 	// this.sceneRotation.lock(true);
 	this._initLeap();
+	this._touch = new TouchDetection(params.sphereSize * .8, this);
 
 	window.addEventListener("resize", this.resize.bind(this));
 }
@@ -232,14 +234,6 @@ p.render = function() {
 
 	this.frame += .01;
 
-	// GL.rotate(this._leapControl.matrix);
-	
-	//*/
-	//	GROUP 1 
-	// this._vSphere.render();
-	// this._vLineSphere.render();
-	// this._vSphereDot2.render();
-	//*/
 
 	//*/
 	//	GROUP 2

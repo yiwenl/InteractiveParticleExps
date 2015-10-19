@@ -40,7 +40,7 @@ window.params = {
 
 
 new App();
-},{"./SceneApp":6,"./libs/bongiovi.js":15,"dat-gui":2}],2:[function(require,module,exports){
+},{"./SceneApp":6,"./libs/bongiovi.js":16,"dat-gui":2}],2:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')
 module.exports.color = require('./vendor/dat.color')
 },{"./vendor/dat.color":3,"./vendor/dat.gui":4}],3:[function(require,module,exports){
@@ -4594,6 +4594,7 @@ var ViewInteractiveLine   = require("./ViewInteractiveLine");
 var ViewSingleDot         = require("./ViewSingleDot");
 var ViewInteractiveDot    = require("./ViewInteractiveDot");
 var LeapControl           = require("./LeapControl");
+var TouchDetection 		  = require("./TouchDetection");
 
 var yOffset = -250;
 var zOffset = 100;
@@ -4614,6 +4615,7 @@ function SceneApp() {
 
 	// this.sceneRotation.lock(true);
 	this._initLeap();
+	this._touch = new TouchDetection(params.sphereSize * .8, this);
 
 	window.addEventListener("resize", this.resize.bind(this));
 }
@@ -4815,14 +4817,6 @@ p.render = function() {
 
 	this.frame += .01;
 
-	// GL.rotate(this._leapControl.matrix);
-	
-	//*/
-	//	GROUP 1 
-	// this._vSphere.render();
-	// this._vLineSphere.render();
-	// this._vSphereDot2.render();
-	//*/
 
 	//*/
 	//	GROUP 2
@@ -4856,7 +4850,87 @@ p.resize = function() {
 };
 
 module.exports = SceneApp;
-},{"./LeapControl":5,"./ViewDots":7,"./ViewInteractiveDot":8,"./ViewInteractiveLine":9,"./ViewInteractiveSphere":10,"./ViewLineSphere":11,"./ViewSingleDot":12,"./ViewSphere":13,"./ViewSphereDots":14}],7:[function(require,module,exports){
+},{"./LeapControl":5,"./TouchDetection":7,"./ViewDots":8,"./ViewInteractiveDot":9,"./ViewInteractiveLine":10,"./ViewInteractiveSphere":11,"./ViewLineSphere":12,"./ViewSingleDot":13,"./ViewSphere":14,"./ViewSphereDots":15}],7:[function(require,module,exports){
+// TouchDetection.js
+
+var glm = bongiovi.glm;
+
+
+glm.vec3.unproject = function(vec, view, proj, viewport) {
+	var dest = glm.vec3.create();//output
+	var m    = glm.mat4.create();//view * proj
+	var im   = glm.mat4.create();//inverse view proj
+	var v    = glm.vec4.create();//vector
+	var tv   = glm.vec4.create();//transformed vector
+
+	v[0] = (vec[0] - viewport[0]) * 2.0 / viewport[2] - 1.0;
+	v[1] = (vec[1] - viewport[1]) * 2.0 / viewport[3] - 1.0;
+	v[2] = vec[2];
+	v[3] = 1.0;
+
+	//build and invert viewproj matrix
+	glm.mat4.multiply(m,view,proj);
+	if(!glm.mat4.invert(im,m)) { return null; }
+	 
+	glm.vec4.transformMat4(tv,v,im);
+	if(v[3] === 0.0) { return null; }
+	 
+	dest[0] = tv[0] / tv[3];
+	dest[1] = tv[1] / tv[3];
+	dest[2] = tv[2] / tv[3];
+	 
+	return dest;
+}
+
+function TouchDetection(radius, scene) {
+	this._scene = scene;
+	this._radius = radius;
+	this.viewport = glm.vec4.fromValues(0, 0, window.innerWidth, window.innerHeight);
+	this._init();
+}
+
+
+var p = TouchDetection.prototype = new bongiovi.EventDispatcher();
+
+p._init = function() {
+	var vertices = [[0,52.573111,85.065081],[0,-52.573111,85.065081],[85.065081,0,52.573111],[85.065081,0,-52.573111],[0,52.573111,-85.065081],[0,-52.573111,-85.065081],[-85.065081,0,-52.573111],[-85.065081,0,52.573111],[52.573111,85.065081,0],[-52.573111,85.065081,0],[-52.573111,-85.065081,0],[52.573111,-85.065081,0],[29.524181,95.542256,0],[0,100,0],[-29.524181,95.542256,0],[14.76209,68.171835,71.656692],[30.901699,80.901699,50],[44.286271,86.418783,23.885564],[-14.76209,68.171835,71.656692],[-30.901699,80.901699,50],[-44.286271,86.418783,23.885564],[86.418783,23.885564,44.286271],[80.901699,50,30.901699],[68.171835,71.656692,14.76209],[23.885564,44.286271,86.418783,],[50,30.901699,80.901699],[71.656692,14.76209,68.171835],[86.418783,23.885564,-44.286271],[80.901699,50,-30.901699],[68.171835,71.656692,-14.76209],[95.542256,0,29.524181],[100,0,0],[95.542256,0,-29.524181],[14.76209,68.171835,-71.656692],[30.901699,80.901699,-50],[44.286271,86.418783,-23.885564],[71.656692,14.76209,-68.171835],[50,30.901699,-80.901699],[23.885564,44.286271,-86.418783],[-14.76209,68.171835,-71.656692],[-30.901699,80.901699,-50],[-44.286271,86.418783,-23.885564],[-86.418783,23.885564,-44.286271],[-80.901699,50,-30.901699],[-68.171835,71.656692,-14.76209],[-23.885564,44.286271,-86.418783],[-50,30.901699,-80.901699],[-71.656692,14.76209,-68.171835],[-86.418783,23.885564,44.286271],[-80.901699,50,30.901699],[-68.171835,71.656692,14.76209],[-95.542256,0,-29.524181],[-100,0,0],[-95.542256,0,29.524181],[-23.885564,44.286271,86.418783],[-50,30.901699,80.901699],[-71.656692,14.76209,68.171835],[-29.524181,-95.542256,0],[0,-100,0],[29.524181,-95.542256,0],[-14.76209,-68.171835,71.656692],[-30.901699,-80.901699,50],[-44.286271,-86.418783,23.885564],[14.76209,-68.171835,71.656692],[30.901699,-80.901699,50],[44.286271,-86.418783,23.885564],[86.418783,-23.885564,44.286271],[80.901699,-50,30.901699],[68.171835,-71.656692,14.76209],[23.885564,-44.286271,86.418783],[50,-30.901699,80.901699],[71.656692,-14.76209,68.171835],[86.418783,-23.885564,-44.286271],[80.901699,-50,-30.901699],[68.171835,-71.656692,-14.76209],[71.656692,-14.76209,-68.171835],[50,-30.901699,-80.901699],[23.885564,-44.286271,-86.418783],[14.76209,-68.171835,-71.656692],[30.901699,-80.901699,-50],[44.286271,-86.418783,-23.885564],[-14.76209,-68.171835,-71.656692],[-30.901699,-80.901699,-50],[-44.286271,-86.418783,-23.885564],[-23.885564,-44.286271,-86.418783],[-50,-30.901699,-80.901699],[-71.656692,-14.76209,-68.171835],[-86.418783,-23.885564,-44.286271],[-80.901699,-50,-30.901699],[-68.171835,-71.656692,-14.76209],[-86.418783,-23.885564,44.286271],[-80.901699,-50,30.901699],[-68.171835,-71.656692,14.76209],[-23.885564,-44.286271,86.418783],[-50,-30.901699,80.901699],[-71.656692,-14.76209,68.171835],[0,29.524181,95.542256],[0,0,100],[0,-29.524181,95.542256],[0,29.524181,-95.542256],[0,0,-100],[0,-29.524181,-95.542256],[-16.245985,95.105652,26.286556],[16.245985,95.105652,26.286556],[0,85.065081,52.573111],[58.778525,68.819096,42.53254],[68.819096,42.53254,58.778525],[42.53254,58.778525,68.819096],[85.065081,52.573111,0],[95.105652,26.286556,-16.245985],[95.105652,26.286556,16.245985],[58.778525,68.819096,-42.53254],[42.53254,58.778525,-68.819096],[68.819096,42.53254,-58.778525],[16.245985,95.105652,-26.286556],[-16.245985,95.105652,-26.286556],[0,85.065081,-52.573111],[-42.53254,58.778525,-68.819096],[-58.778525,68.819096,-42.53254],[-68.819096,42.53254,-58.778525],[-95.105652,26.286556,-16.245985],[-85.065081,52.573111,0],[-95.105652,26.286556,16.245985],[-58.778525,68.819096,42.53254],[-42.53254,58.778525,68.819096],[-68.819096,42.53254,58.778525],[16.245985,-95.105652,26.286556],[-16.245985,-95.105652,26.286556],[0,-85.065081,52.573111],[68.819096,-42.53254,58.778525],[58.778525,-68.819096,42.53254],[42.53254,-58.778525,68.819096],[95.105652,-26.286556,16.245985],[95.105652,-26.286556,-16.245985],[85.065081,-52.573111,0],[68.819096,-42.53254,-58.778525],[42.53254,-58.778525,-68.819096],[58.778525,-68.819096,-42.53254],[0,-85.065081,-52.573111],[-16.245985,-95.105652,-26.286556],[16.245985,-95.105652,-26.286556],[-42.53254,-58.778525,-68.819096],[-68.819096,-42.53254,-58.778525],[-58.778525,-68.819096,-42.53254],[-95.105652,-26.286556,-16.245985],[-95.105652,-26.286556,16.245985],[-85.065081,-52.573111,0],[-68.819096,-42.53254,58.778525],[-42.53254,-58.778525,68.819096],[-58.778525,-68.819096,42.53254],[-26.286556,-16.245985,95.105652],[-52.573111,0,85.065081],[-26.286556,16.245985,95.105652],[52.573111,0,85.065081],[26.286556,-16.245985,95.105652],[26.286556,16.245985,95.105652],[26.286556,16.245985,-95.105652],[26.286556,-16.245985,-95.105652],[52.573111,0,-85.065081],[-26.286556,16.245985,-95.105652],[-52.573111,0,-85.065081],[-26.286556,-16.245985,-95.105652]];
+
+	this._vertices = [];
+	for(var i=0; i<vertices.length; i++) {
+		var v = glm.vec3.clone(vertices[i]);
+		glm.vec3.normalize(v, v);
+		glm.vec3.scale(v, v, this._radius);
+	}
+
+	this.mouse = glm.vec3.create();
+
+	window.addEventListener("mousemove", this._onMove.bind(this));
+};
+
+
+p._onMove = function(e) {
+	this.mouse[0] = e.clientX;
+	this.mouse[1] = e.clientY;
+	this.mouse[2] = 0;
+	this.viewport[2] = window.innerWidth;
+	this.viewport[3] = window.innerHeight;
+
+	var view = this._scene.camera.getMatrix();
+	var proj = this._scene.camera.projection;
+
+	var vNear = glm.vec3.unproject(this.mouse, view, proj, this.viewport);
+	this.mouse[2] = 1;
+	var vFar = glm.vec3.unproject(this.mouse, view, proj, this.viewport);
+	console.log(vNear, vFar);
+
+	for(var i=0; i<this._vertices.length; i++) {
+		
+	}
+};
+
+
+module.exports = TouchDetection;
+},{}],8:[function(require,module,exports){
 // ViewDots.js
 
 var GL = bongiovi.GL;
@@ -4923,7 +4997,7 @@ p.render = function(texture) {
 };
 
 module.exports = ViewDots;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 // ViewInteractiveDot.js
 
 var GL = bongiovi.GL;
@@ -4993,7 +5067,7 @@ p.render = function(avoidCenter, avoidCenter2) {
 };
 
 module.exports = ViewInteractiveDot;
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 // ViewInteractiveLine.js
 
 var GL = bongiovi.GL;
@@ -5084,7 +5158,7 @@ p.render = function(avoidCenter, avoidCenter2) {
 };
 
 module.exports = ViewInteractiveLine;
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 // ViewInteractiveSphere.js
 
 var GL = bongiovi.GL;
@@ -5149,7 +5223,7 @@ p.render = function(avoidCenter, avoidCenter2) {
 };
 
 module.exports = ViewInteractiveSphere;
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 // ViewLineSphere.js
 
 var GL = bongiovi.GL;
@@ -5227,7 +5301,7 @@ p.render = function() {
 };
 
 module.exports = ViewLineSphere;
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // ViewSingleDot.js
 
 var GL = bongiovi.GL;
@@ -5257,7 +5331,7 @@ p.render = function(pos, color) {
 };
 
 module.exports = ViewSingleDot;
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var GL = bongiovi.GL;
 var gl;
 
@@ -5296,7 +5370,7 @@ p.render = function() {
 };
 
 module.exports = ViewSphere;
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 // ViewSphereDots.js
 
 var GL = bongiovi.GL;
@@ -5339,7 +5413,7 @@ p.render = function() {
 };
 
 module.exports = ViewSphereDots;
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.bongiovi = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 "use strict";

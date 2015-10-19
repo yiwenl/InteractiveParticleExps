@@ -21,7 +21,7 @@ p._init = function() {
 
 p.render = function(texture, invert) {
 	this.shader.bind();
-	glm.vec3.set(this.windDir, -1, 0, 0);
+	glm.vec3.set(this.windDir, -1, -.5, 0);
 	// glm.vec3.transformMat4(this.windDir, this.windDir, invert);
 	// if(Math.random() > .9) console.log(this.windDir);
 	this.shader.uniform("texture", "uniform1i", 0);

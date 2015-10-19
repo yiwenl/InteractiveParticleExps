@@ -217,7 +217,7 @@ p._initViews = function() {
 	this._vSphereDot1 = new ViewInteractiveDot("assets/sphere24.obj", radius1, [1, 1, 1], 1);
 	this._vSphereDot1.pointSize = 3.0;
 	this._vInterLine1 = new ViewInteractiveLine("assets/sphere24.obj", radius1, [1, 1, 1], .25);
-	this._vInterSphere1 = new ViewInteractiveSphere("assets/sphere24.obj", radius1, [0.1, .65, .47], .75);
+	this._vInterSphere1 = new ViewInteractiveSphere("assets/sphere24.obj", radius1, [0.4, .65, .47], 1.75);
 
 
 	//	RADIUS 3 GROUP
@@ -300,7 +300,7 @@ p.render = function() {
 
 
 	//	PARTICLE
-	this._vRender.render(this._fboCurrent.getTexture());
+	// this._vRender.render(this._fboCurrent.getTexture());
 
 	//*/
 	//	GROUP 2

@@ -89,7 +89,7 @@ void main(void) {
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
 			vec3 w = (invert * vec4(windDir, 1.0)).rgb;
-			gl_FragColor = vec4(w*.2, 1.0);	
+			gl_FragColor = vec4(w*.1, 1.0);	
 		}
     } else {
     	gl_FragColor = vec4(0.0);

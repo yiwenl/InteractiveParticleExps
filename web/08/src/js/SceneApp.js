@@ -29,9 +29,10 @@ function SceneApp() {
 	bongiovi.Scene.call(this);
 	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 2500);
 	this.camera.radius.value = 750;
+	this.camera.radius.setEasing(.02);
 	this.camera._rx.value = -.3;
 	this.invert = glm.mat4.create();
-	this.globalOpacity = new bongiovi.EaseNumber(1.0, 0);
+	this.globalOpacity = new bongiovi.EaseNumber(1.0, 0.05);
 
 	// this.sceneRotation.lock(true);
 	this._initLeap();
@@ -169,10 +170,17 @@ p._onKey = function(e) {
 	if(e.keyCode === 32) {	//	spacebar
 		this._subScene.start();
 		this.globalOpacity.value = 0;
+		// this.camera.radius.value = 1450;
+		bongiovi.Scheduler.delay(this, this.zoomOut, null, 700);
 	} else if(e.keyCode == 82) {
 		this._subScene.reset();
+		this.camera.radius.value = 750;
 		this.globalOpacity.value = 1;
 	}
+};
+
+p.zoomOut = function() {
+	this.camera.radius.value = 1450;
 };
 
 p._initTextures = function() {
@@ -294,7 +302,7 @@ p.render = function() {
 	}
 
 	if(params.group4) {
-		GL.enableAlphaBlending();
+		
 		this._subScene.render(this.invert);
 	}
 
@@ -303,13 +311,14 @@ p.render = function() {
 
 	GL.setMatrices(this.cameraOrtho);
 	GL.rotate(this.rotationFront);
+
+	/*/
 	GL.setViewport(0, 0, 256, 256);
 	GL.enableAlphaBlending();
 	this._vCopy.render(this._subScene._fboCurrent.getTexture());
-
+	//*/
+	GL.enableAlphaBlending();
 	GL.setViewport(0, 0, GL.width, GL.height);
-	// this._vCopy.render(this._fboRender.getTexture());
-	
 	this._vPost.render(this._fboRender.getTexture(), this._textureGrd, this._textureGrdMap);
 };
 

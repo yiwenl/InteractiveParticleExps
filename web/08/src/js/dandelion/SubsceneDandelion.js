@@ -33,6 +33,7 @@ p._init = function() {
 	this._vRenderLines = new ViewRenderLines(this._vRender);
 	this._vRenderFace  = new ViewRenderFace(this._vRender);
 	this._vSim         = new ViewSimulation();
+	this._stepper = 0;
 
 	this.reset();
 };
@@ -40,12 +41,13 @@ p._init = function() {
 p.start = function() {
 	console.debug('Start flowing');
 	this._startRendering = true;
-	this._vRender.opacity.value = 1;
-	this._vRenderLines.opacity.value = 1;
-	this._vRenderFace.opacity.value = .15;
+	this._vRender.opacity.value = .5;
+	this._vRenderLines.opacity.value = .5;
+	this._vRenderFace.opacity.value = .1;
 };
 
 p.reset = function() {
+	this._stepper = 0;
 	this._startRendering = false;
 	this._vRender.opacity.value = 0;
 	this._vRenderLines.opacity.value = 0;
@@ -55,6 +57,7 @@ p.reset = function() {
 
 	this._fboCurrent.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
+	GL.clear(0, 0, 0, 0);
 	this._vSave.render();
 	this._fboCurrent.unbind();
 
@@ -72,7 +75,6 @@ p.update = function(invert) {
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
 	this._vSim.render(this._fboCurrent.getTexture() , this.invert);
-	// this._vSim.render(this._fboCurrent.getTexture() , this.sceneRotation.matrix);
 	this._fboTarget.unbind();
 
 
@@ -88,11 +90,12 @@ p.update = function(invert) {
 
 p.render = function(invert) {
 	if(!this._startRendering) return;
+	this._stepper += .002;
 	this.invert = invert;
 	gl.disable(gl.CULL_FACE);
-	this._vRender.render(this._fboCurrent.getTexture());
-	this._vRenderLines.render(this._fboCurrent.getTexture());
-	this._vRenderFace.render(this._fboCurrent.getTexture());
+	this._vRender.render(this._fboCurrent.getTexture(), this._stepper);
+	this._vRenderLines.render(this._fboCurrent.getTexture(), this._stepper);
+	this._vRenderFace.render(this._fboCurrent.getTexture(), this._stepper);
 	gl.enable(gl.CULL_FACE);
 };
 

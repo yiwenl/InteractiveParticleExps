@@ -6,7 +6,7 @@ window.params = {
 	numParticles:32,
 	skipCount:5,
 
-	group1:true,
+	group1:false,
 	group2:false,
 	group3:false,
 	group4:true

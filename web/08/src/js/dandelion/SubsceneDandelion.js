@@ -3,9 +3,10 @@
 var GL = bongiovi.GL;
 var gl;
 
-var ViewSave              = require("./ViewSave");
-var ViewRender            = require("./ViewRender");
-var ViewSimulation        = require("./ViewSimulation");
+var ViewSave        = require("./ViewSave");
+var ViewRender      = require("./ViewRender");
+var ViewRenderLines = require("./ViewRenderLines");
+var ViewSimulation  = require("./ViewSimulation");
 
 function SubsceneDandelion(scene) {
 	this.scene = scene;
@@ -22,12 +23,13 @@ p._init = function() {
 		minFilter:gl.NEAREST,
 		magFilter:gl.NEAREST
 	}
-	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-
-	this._vSave     = new ViewSave();
-	this._vRender 	= new ViewRender();
-	this._vSim 		= new ViewSimulation();
+	this._fboCurrent   = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboTarget    = new bongiovi.FrameBuffer(num*2, num*2, o);
+	
+	this._vSave        = new ViewSave();
+	this._vRender      = new ViewRender();
+	this._vRenderLines = new ViewRenderLines();
+	this._vSim         = new ViewSimulation();
 
 	GL.setMatrices(this.scene.cameraOtho);
 	GL.rotate(this.scene.rotationFront);
@@ -65,6 +67,7 @@ p.render = function(invert) {
 	this.invert = invert;
 	gl.disable(gl.CULL_FACE);
 	this._vRender.render(this._fboCurrent.getTexture());
+	this._vRenderLines.render(this._fboCurrent.getTexture());
 	gl.enable(gl.CULL_FACE);
 };
 

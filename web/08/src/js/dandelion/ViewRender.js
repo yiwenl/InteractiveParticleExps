@@ -89,6 +89,9 @@ p._init = function() {
 		return v;	
 	}
 
+	this.allPoints = [];
+	this.centers = [];
+	this.uvs = [];
 
 	for(var i=0; i<ps.length; i+=3) {
 		var p0 = vec3.clone(ps[i]);
@@ -100,10 +103,8 @@ p._init = function() {
 						(p0[1]+p1[1]+p2[1])/3.0,
 						(p0[2]+p1[2]+p2[2])/3.0
 						];
-
-
-
 		var index = i/3;
+
 		var ux = (index % numParticles)/numParticles;
 		var uy = Math.floor(index/numParticles)/numParticles;
 		var uv = [ux, uy];
@@ -146,7 +147,9 @@ p._init = function() {
 			addVertex(pCenter1, uv, pCenter);
 		}
 		
-		count++;
+		this.allPoints[index] = [p0, p1, p2, p3, p4, p5, p6, p7, p8, pCenter, pCenter1];
+		this.centers[index] = pCenter1;
+		this.uvs[index] = uv;
 	}
 
 	// this.mesh = new bongiovi.Mesh(positions.length, indices.length, GL.gl.POLYGON);
@@ -164,7 +167,7 @@ p.render = function(texture) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
-	this.shader.uniform("size", "uniform1f", params.sphereSize * .8);
+	this.shader.uniform("opacity", "uniform1f", 1.0);
 	texture.bind(0);
 	GL.draw(this.mesh);
 };

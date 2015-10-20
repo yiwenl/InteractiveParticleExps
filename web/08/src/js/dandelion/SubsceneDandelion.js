@@ -5,6 +5,7 @@ var gl;
 
 var ViewSave        = require("./ViewSave");
 var ViewRender      = require("./ViewRender");
+var ViewRenderFace  = require("./ViewRenderFace");
 var ViewRenderLines = require("./ViewRenderLines");
 var ViewSimulation  = require("./ViewSimulation");
 
@@ -28,7 +29,8 @@ p._init = function() {
 	
 	this._vSave        = new ViewSave();
 	this._vRender      = new ViewRender();
-	this._vRenderLines = new ViewRenderLines();
+	this._vRenderLines = new ViewRenderLines(this._vRender);
+	this._vRenderFace  = new ViewRenderFace(this._vRender);
 	this._vSim         = new ViewSimulation();
 
 	GL.setMatrices(this.scene.cameraOtho);
@@ -68,6 +70,7 @@ p.render = function(invert) {
 	gl.disable(gl.CULL_FACE);
 	this._vRender.render(this._fboCurrent.getTexture());
 	this._vRenderLines.render(this._fboCurrent.getTexture());
+	this._vRenderFace.render(this._fboCurrent.getTexture());
 	gl.enable(gl.CULL_FACE);
 };
 

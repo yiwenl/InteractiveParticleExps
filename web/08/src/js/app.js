@@ -4,7 +4,11 @@ var dat = require("dat-gui");
 window.params = {
 	sphereSize:250,
 	numParticles:32,
-	skipCount:5
+	skipCount:5,
+
+	group1:true,
+	group2:true,
+	group3:true
 };
 
 (function() {
@@ -39,7 +43,10 @@ window.params = {
 		this._scene = new SceneApp();
 		bongiovi.Scheduler.addEF(this, this._loop);
 
-		// this.gui = new dat.GUI({width:300});
+		this.gui = new dat.GUI({width:300});
+		this.gui.add(params, "group1");
+		this.gui.add(params, "group2");
+		this.gui.add(params, "group3");
 	};
 
 	p._loop = function() {

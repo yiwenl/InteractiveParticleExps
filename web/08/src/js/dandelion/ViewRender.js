@@ -4,7 +4,7 @@ var gl;
 var glslify = require("glslify");
 
 function ViewRender() {
-	bongiovi.View.call(this, glslify("../shaders/render.vert"), glslify("../shaders/render.frag"));
+	bongiovi.View.call(this, glslify("../../shaders/render.vert"), glslify("../../shaders/render.frag"));
 }
 
 var p = ViewRender.prototype = new bongiovi.View();

@@ -12,11 +12,8 @@ var ViewSingleDot         = require("./ViewSingleDot");
 var ViewInteractiveDot    = require("./ViewInteractiveDot");
 var LeapControl           = require("./LeapControl");
 var TouchDetection        = require("./TouchDetection");
-
-var ViewSave              = require("./ViewSave");
-var ViewRender            = require("./ViewRender");
-var ViewSimulation        = require("./ViewSimulation");
 var ViewPost              = require("./ViewPost");
+var SubsceneDandelion     = require("./dandelion/SubsceneDandelion");
 
 var yOffset = -250;
 var zOffset = 100;
@@ -37,6 +34,7 @@ function SceneApp() {
 
 	// this.sceneRotation.lock(true);
 	this._initLeap();
+	this._subScene = new SubsceneDandelion(this);
 	this._touch = new TouchDetection(params.sphereSize * .8, this);
 
 	window.addEventListener("resize", this.resize.bind(this));
@@ -164,15 +162,6 @@ p._checkPointers = function(pointer) {
 
 p._initTextures = function() {
 	console.log('Init Textures');
-
-	var num = params.numParticles;
-	var o = {
-		minFilter:gl.NEAREST,
-		magFilter:gl.NEAREST
-	}
-	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-
 	var scale 			= 2;
 	var w 				= Math.min(1920 * scale, GL.width * scale);
 	var h 				= w / GL.aspectRatio;
@@ -193,22 +182,10 @@ p._initViews = function() {
 	var radius1 = params.sphereSize * .8;
 	// var radius2 = params.sphereSize * .6;
 	var radius3 = params.sphereSize * .7;
-	var radius4 = params.sphereSize * .65;
+	var radius4 = params.sphereSize * .685;
 
-	//	PARTICLES
-	this._vSave     = new ViewSave();
-	this._vRender 	= new ViewRender();
-	this._vSim 		= new ViewSimulation();
 	this._vCopy 	= new bongiovi.ViewCopy();
 	this._vPost 	= new ViewPost();
-
-	GL.setMatrices(this.cameraOtho);
-	GL.rotate(this.rotationFront);
-
-	this._fboCurrent.bind();
-	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
-	this._vSave.render();
-	this._fboCurrent.unbind();
 
 
 	//	RADIUS 1 GROUP
@@ -252,27 +229,7 @@ p._checkTouched = function() {
 	}
 };
 
-p.updateFbo = function() {
-	GL.setMatrices(this.cameraOtho);
-	GL.rotate(this.rotationFront);
 
-	this._fboTarget.bind();
-	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
-	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture() , this.invert);
-	// this._vSim.render(this._fboCurrent.getTexture() , this.sceneRotation.matrix);
-	this._fboTarget.unbind();
-
-
-	var tmp = this._fboTarget;
-	this._fboTarget = this._fboCurrent;
-	this._fboCurrent = tmp;
-
-
-	GL.setMatrices(this.camera);
-	GL.rotate(this.sceneRotation.matrix);		
-	GL.setViewport(0, 0, GL.width, GL.height);
-};
 
 p.render = function() {
 	
@@ -285,9 +242,9 @@ p.render = function() {
 	glm.vec3.transformMat4(hl, hl, this.invert);
 	glm.vec3.transformMat4(hr, hr, this.invert);
 
+	this._subScene.update(this.invert);
+	
 	this._checkTouched();
-
-	this.updateFbo();
 
 	this._fboRender.bind();
 	GL.setViewport(0, 0, this._fboRender.width, this._fboRender.height);
@@ -299,33 +256,29 @@ p.render = function() {
 	this.frame += .01;
 
 
-	//	PARTICLE
-	// this._vRender.render(this._fboCurrent.getTexture());
+	if(params.group1) {
+		this._vDots.render();
+		this._vSphereDot1.render(hr, hl);
+		this._vInterSphere1.render(hr, hl);
+		this._vInterLine1.render(hr, hl);	
+	}
+	
+	if(params.group2) {
+		this.seed += .0015;
+		this._vInterSphere2.seed = this._vInterLine2.seed = this._vInterDot2.seed = this.seed;
+		this._vInterSphere2.render();
+		this._vInterLine2.render();
+		this._vInterDot2.render();	
+	}	
 
-	//*/
-	//	GROUP 2
-	this._vDots.render();
-	this._vSphereDot1.render(hr, hl);
-	this._vInterSphere1.render(hr, hl);
-	this._vInterLine1.render(hr, hl);
-	//*/
+	if(params.group3) {
+		this._vInterSphere3.seed = this._vInterLine3.seed = this._vInterDot3.seed = this.seed2;
+		this._vInterSphere3.render();
+		this._vInterLine3.render();
+		this._vInterDot3.render();	
+	}
 
-	//*/
-	//	GROUP 3
-	this.seed += .0015;
-	this._vInterSphere2.seed = this._vInterLine2.seed = this._vInterDot2.seed = this.seed;
-	this._vInterSphere2.render();
-	this._vInterLine2.render();
-	this._vInterDot2.render();
-	//*/
-
-	//*/
-	//	GROUP 4
-	this._vInterSphere3.seed = this._vInterLine3.seed = this._vInterDot3.seed = this.seed2;
-	this._vInterSphere3.render();
-	this._vInterLine3.render();
-	this._vInterDot3.render();
-	//*/
+	this._subScene.render(this.invert);
 
 	this._fboRender.unbind();
 

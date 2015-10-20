@@ -8,7 +8,7 @@ var glslify = require("glslify");
 function ViewSimulation() {
 	this._count = Math.random() * 0xFF;
 	this.windDir = glm.vec3.create();
-	bongiovi.View.call(this, null, glslify("../shaders/sim.frag"));
+	bongiovi.View.call(this, null, glslify("../../shaders/sim.frag"));
 }
 
 var p = ViewSimulation.prototype = new bongiovi.View();

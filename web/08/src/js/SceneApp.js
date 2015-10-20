@@ -278,7 +278,10 @@ p.render = function() {
 		this._vInterDot3.render();	
 	}
 
-	this._subScene.render(this.invert);
+	if(params.group4) {
+		GL.enableAlphaBlending();
+		this._subScene.render(this.invert);
+	}
 
 	this._fboRender.unbind();
 

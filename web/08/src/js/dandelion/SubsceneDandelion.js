@@ -63,7 +63,9 @@ p.update = function(invert) {
 
 p.render = function(invert) {
 	this.invert = invert;
+	gl.disable(gl.CULL_FACE);
 	this._vRender.render(this._fboCurrent.getTexture());
+	gl.enable(gl.CULL_FACE);
 };
 
 module.exports = SubsceneDandelion;

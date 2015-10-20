@@ -88,8 +88,26 @@ void main(void) {
 
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
+			vec2 uvPos = vTextureCoord - vec2(.5, .0);
+			vec2 uvPosToCenter = vTextureCoord + vec2(-.5, .5);
+			vec3 pos = texture2D(texture, uvPos).rgb;
+			vec3 posToCenter = texture2D(texture, uvPosToCenter).rgb;
+			vec3 vel = texture2D(texture, vTextureCoord).rgb;
+
 			vec3 w = (invert * vec4(windDir, 1.0)).rgb;
-			gl_FragColor = vec4(w*.1, 1.0);	
+
+			const float posOffset = .05;
+			const float decreaseRate = .95;
+			float ax = snoise((pos.x+posToCenter.x) * posOffset + time, (pos.y+posToCenter.y) * posOffset + time, (pos.z+posToCenter.z) * posOffset + time);
+			float ay = snoise((pos.y+posToCenter.y) * posOffset + time, (pos.z+posToCenter.z) * posOffset + time, (pos.x+posToCenter.x) * posOffset + time);
+			float az = snoise((pos.z+posToCenter.z) * posOffset + time, (pos.x+posToCenter.x) * posOffset + time, (pos.y+posToCenter.y) * posOffset + time);
+			vec3 acc = vec3(ax, ay, az);
+
+
+			vel += (w * .1 + acc * .2);
+			vel *= decreaseRate;
+
+			gl_FragColor = vec4(vel, 1.0);	
 		}
     } else {
     	gl_FragColor = vec4(0.0);

@@ -7,13 +7,15 @@ attribute vec2 aTextureCoord;
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform sampler2D texture;
+uniform float size;
 varying vec2 vTextureCoord;
 varying vec3 vColor;
 
 void main(void) {
 	vec3 pos = aVertexPosition;
+	pos = normalize(pos) * size;
 	vec2 uv = aTextureCoord * .5;
-	pos.xyz = texture2D(texture, uv).rgb;
+	pos.xyz += texture2D(texture, uv).rgb * 0.0;
     gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);
     vTextureCoord = aTextureCoord;
 

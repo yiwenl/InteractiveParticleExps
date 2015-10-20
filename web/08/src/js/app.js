@@ -7,8 +7,9 @@ window.params = {
 	skipCount:5,
 
 	group1:true,
-	group2:true,
-	group3:true
+	group2:false,
+	group3:false,
+	group4:true
 };
 
 (function() {
@@ -47,6 +48,7 @@ window.params = {
 		this.gui.add(params, "group1");
 		this.gui.add(params, "group2");
 		this.gui.add(params, "group3");
+		this.gui.add(params, "group4");
 	};
 
 	p._loop = function() {

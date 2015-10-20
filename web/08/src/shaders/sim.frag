@@ -73,7 +73,12 @@ float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+float exponentialIn(float t) {
+  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));
+}
 
+
+uniform float stepper;
 uniform float time;
 uniform vec3 windDir;
 uniform mat4 invert;
@@ -88,28 +93,33 @@ void main(void) {
 
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
-			vec2 uvPos = vTextureCoord - vec2(.5, .0);
+			vec2 uvPos         = vTextureCoord - vec2(.5, .0);
 			vec2 uvPosToCenter = vTextureCoord + vec2(-.5, .5);
-			vec3 pos = texture2D(texture, uvPos).rgb;
-			vec3 posToCenter = texture2D(texture, uvPosToCenter).rgb;
-			vec3 vel = texture2D(texture, vTextureCoord).rgb;
+			vec2 uvExtra       = vTextureCoord + vec2(.0, .5);
+			vec3 pos           = texture2D(texture, uvPos).rgb;
+			vec3 posToCenter   = texture2D(texture, uvPosToCenter).rgb;
+			vec3 vel           = texture2D(texture, vTextureCoord).rgb;
+			vec3 extra         = texture2D(texture, uvExtra).rgb;
+
+			float t 		   = clamp(-extra.x + stepper, 0.0, 1.0);
+			float offset       = exponentialIn( t );
 
 			vec3 w = (invert * vec4(windDir, 1.0)).rgb;
 
-			const float posOffset = .05;
-			const float decreaseRate = .95;
+			const float posOffset = .01;
+			const float decreaseRate = .975;
 			float ax = snoise((pos.x+posToCenter.x) * posOffset + time, (pos.y+posToCenter.y) * posOffset + time, (pos.z+posToCenter.z) * posOffset + time);
 			float ay = snoise((pos.y+posToCenter.y) * posOffset + time, (pos.z+posToCenter.z) * posOffset + time, (pos.x+posToCenter.x) * posOffset + time);
 			float az = snoise((pos.z+posToCenter.z) * posOffset + time, (pos.x+posToCenter.x) * posOffset + time, (pos.y+posToCenter.y) * posOffset + time);
 			vec3 acc = vec3(ax, ay, az);
 
 
-			vel += (w * .1 + acc * .2);
+			vel += (w * .1 + acc * .2) * offset;
 			vel *= decreaseRate;
 
 			gl_FragColor = vec4(vel, 1.0);	
 		}
     } else {
-    	gl_FragColor = vec4(0.0);
+    	gl_FragColor = texture2D(texture, vTextureCoord);
     }
 }

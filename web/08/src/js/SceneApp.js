@@ -31,6 +31,7 @@ function SceneApp() {
 	this.camera.radius.value = 750;
 	this.camera._rx.value = -.3;
 	this.invert = glm.mat4.create();
+	this.globalOpacity = new bongiovi.EaseNumber(1.0, 0);
 
 	// this.sceneRotation.lock(true);
 	this._initLeap();
@@ -38,6 +39,7 @@ function SceneApp() {
 	this._touch = new TouchDetection(params.sphereSize * .8, this);
 
 	window.addEventListener("resize", this.resize.bind(this));
+	window.addEventListener("keydown", this._onKey.bind(this));
 }
 
 
@@ -160,6 +162,19 @@ p._checkPointers = function(pointer) {
 	this._pointers.push(o);
 };
 
+
+p._onKey = function(e) {
+	// console.log(e.keyCode);
+
+	if(e.keyCode === 32) {	//	spacebar
+		this._subScene.start();
+		this.globalOpacity.value = 0;
+	} else if(e.keyCode == 82) {
+		this._subScene.reset();
+		this.globalOpacity.value = 1;
+	}
+};
+
 p._initTextures = function() {
 	console.log('Init Textures');
 	var scale 			= 2;
@@ -257,10 +272,10 @@ p.render = function() {
 
 
 	if(params.group1) {
-		this._vDots.render();
-		this._vSphereDot1.render(hr, hl);
-		this._vInterSphere1.render(hr, hl);
-		this._vInterLine1.render(hr, hl);	
+		this._vDots.render(1.0);
+		this._vSphereDot1.render(hr, hl, this.globalOpacity.value);
+		this._vInterSphere1.render(hr, hl, this.globalOpacity.value);
+		this._vInterLine1.render(hr, hl, this.globalOpacity.value);	
 	}
 	
 	if(params.group2) {
@@ -288,9 +303,13 @@ p.render = function() {
 
 	GL.setMatrices(this.cameraOrtho);
 	GL.rotate(this.rotationFront);
+	GL.setViewport(0, 0, 256, 256);
+	GL.enableAlphaBlending();
+	this._vCopy.render(this._subScene._fboCurrent.getTexture());
+
 	GL.setViewport(0, 0, GL.width, GL.height);
 	// this._vCopy.render(this._fboRender.getTexture());
-	GL.enableAlphaBlending();
+	
 	this._vPost.render(this._fboRender.getTexture(), this._textureGrd, this._textureGrdMap);
 };
 

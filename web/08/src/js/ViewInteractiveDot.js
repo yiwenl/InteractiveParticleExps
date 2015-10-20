@@ -52,12 +52,14 @@ p._onObjLoaded = function(mesh, o) {
 };
 
 
-p.render = function(avoidCenter, avoidCenter2) {
+p.render = function(avoidCenter, avoidCenter2, globalOpacity) {
 	if(!this.mesh ) return;
 	this.shader.bind();
 
+	globalOpacity = globalOpacity === undefined ? 1 : globalOpacity;
+
 	this.shader.uniform("color", "uniform3fv", this.color);
-	this.shader.uniform("opacity", "uniform1f", this.opacity);
+	this.shader.uniform("opacity", "uniform1f", this.opacity * globalOpacity);
 	this.shader.uniform("size", "uniform1f", this.size);
 	this.shader.uniform("pointSize", "uniform1f", this.pointSize);
 	this.shader.uniform("seed", "uniform1f", this.seed);

@@ -33,8 +33,8 @@ p._init = function() {
 		for(var i=0; i<numParticles; i++) {
 			positions.push([0, 0, 0]);
 
-			ux = i/numParticles-1.0;
-			uy = j/numParticles-1.0;
+			ux = i/numParticles-1.0 + .5/numParticles;
+			uy = j/numParticles-1.0 + .5/numParticles;
 			coords.push([ux, uy]);
 			indices.push(count);
 			count ++;
@@ -58,6 +58,11 @@ p._init = function() {
 			indices.push(count);
 			count ++;
 
+			//	RANDOM
+			positions.push([Math.random(), Math.random(), Math.random()]);
+			coords.push([ux+1.0, uy+1.0]);
+			indices.push(count);
+			count ++;
 		}
 	}
 

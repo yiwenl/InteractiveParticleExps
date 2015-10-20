@@ -10,6 +10,7 @@ var glslify = require("glslify");
 
 function ViewRenderLines(vRender) {
 	this._vRender = vRender;
+	this.opacity = new bongiovi.EaseNumber(0);
 	bongiovi.View.call(this, glslify("../../shaders/render.vert"), glslify("../../shaders/render.frag"));
 }
 
@@ -50,7 +51,7 @@ p._init = function() {
 		var uv = uvs[i];
 		var center = centers[i];
 
-		if(i == 72/3) {
+		if(i == 72/3 || 1) {
 			addLine(ps[9], ps[10], uv, center);	
 			addLine(ps[9], ps[0], uv, center);	
 			addLine(ps[9], ps[1], uv, center);	
@@ -78,7 +79,7 @@ p.render = function(texture) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
-	this.shader.uniform("opacity", "uniform1f", 1.0);
+	this.shader.uniform("opacity", "uniform1f", this.opacity.value);
 	texture.bind(0);
 	GL.draw(this.mesh);
 };

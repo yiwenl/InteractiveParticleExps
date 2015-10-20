@@ -50,8 +50,9 @@ p._init = function() {
 		var uv = uvs[i];
 		var center = centers[i];
 
-		if(i == 72/3) {
+		if(i == 72/3 || 1) {
 			addFace(ps[0], ps[1], ps[2], uv, center);
+			addFace(ps[3], ps[4], ps[5], uv, center);
 		}
 	}
 		

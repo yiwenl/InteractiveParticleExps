@@ -12,6 +12,7 @@ var ViewSimulation  = require("./ViewSimulation");
 function SubsceneDandelion(scene) {
 	this.scene = scene;
 	this._init();
+	this._startRendering = false;
 }
 
 var p = SubsceneDandelion.prototype;
@@ -33,6 +34,22 @@ p._init = function() {
 	this._vRenderFace  = new ViewRenderFace(this._vRender);
 	this._vSim         = new ViewSimulation();
 
+	this.reset();
+};
+
+p.start = function() {
+	console.debug('Start flowing');
+	this._startRendering = true;
+	this._vRender.opacity.value = 1;
+	this._vRenderLines.opacity.value = 1;
+	this._vRenderFace.opacity.value = .15;
+};
+
+p.reset = function() {
+	this._startRendering = false;
+	this._vRender.opacity.value = 0;
+	this._vRenderLines.opacity.value = 0;
+	this._vRenderFace.opacity.value = 0;
 	GL.setMatrices(this.scene.cameraOtho);
 	GL.rotate(this.scene.rotationFront);
 
@@ -40,9 +57,13 @@ p._init = function() {
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	this._vSave.render();
 	this._fboCurrent.unbind();
+
+	this._vSim.reset();
 };
 
+
 p.update = function(invert) {
+	if(!this._startRendering) return;
 	this.invert = invert;
 	GL.setMatrices(this.scene.cameraOtho);
 	GL.rotate(this.scene.rotationFront);
@@ -66,6 +87,7 @@ p.update = function(invert) {
 };
 
 p.render = function(invert) {
+	if(!this._startRendering) return;
 	this.invert = invert;
 	gl.disable(gl.CULL_FACE);
 	this._vRender.render(this._fboCurrent.getTexture());

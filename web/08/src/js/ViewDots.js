@@ -49,16 +49,12 @@ p._init = function() {
 	this.mesh.bufferData(extra, "aExtra", 3);
 };
 
-p.render = function(texture) {
+p.render = function(globalOpacity) {
 	if(!this.shader.isReady() ) return;
 
 	this.shader.bind();
-	if(texture) {
-		this.shader.uniform("texture", "uniform1i", 0);
-		texture.bind(0);	
-	}
 	this.shader.uniform("color", "uniform3fv", this.color);
-	this.shader.uniform("opacity", "uniform1f", this.opacity);
+	this.shader.uniform("opacity", "uniform1f", this.opacity * globalOpacity);
 	this.shader.uniform("size", "uniform1f", this.size);
 	GL.draw(this.mesh);
 };

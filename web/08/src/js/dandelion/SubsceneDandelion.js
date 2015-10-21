@@ -90,12 +90,12 @@ p.update = function(invert) {
 
 p.render = function(invert) {
 	if(!this._startRendering) return;
-	this._stepper += .002;
+	this._stepper += .003;
 	this.invert = invert;
 	gl.disable(gl.CULL_FACE);
-	this._vRender.render(this._fboCurrent.getTexture(), this._stepper);
-	this._vRenderLines.render(this._fboCurrent.getTexture(), this._stepper);
-	this._vRenderFace.render(this._fboCurrent.getTexture(), this._stepper);
+	this._vRender.render(this._fboCurrent.getTexture(), this._stepper, this.invert);
+	this._vRenderLines.render(this._fboCurrent.getTexture(), this._stepper, this.invert);
+	this._vRenderFace.render(this._fboCurrent.getTexture(), this._stepper, this.invert);
 	gl.enable(gl.CULL_FACE);
 };
 

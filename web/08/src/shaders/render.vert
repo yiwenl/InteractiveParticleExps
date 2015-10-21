@@ -9,6 +9,7 @@ attribute vec2 aTextureCoord;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
+uniform mat4 invert;
 uniform sampler2D texture;
 uniform float size;
 uniform float stepper;
@@ -48,23 +49,34 @@ vec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) {
 }
 
 void main(void) {
-	vec3 axis        = aRotAxis;
-	float thetaOffset = clamp(-aTheta.y-.1 + stepper*mix(aTheta.z, 1.0, .75), 0.0, 1.0);
-	float theta      = aTheta.x * elasticOut(thetaOffset);
-	vec3 pos         = aVertexPosition;
-	vec3 relativePos = pos - aCenter;
-	vec3 newPos      = rotate_vertex_position(relativePos, axis, theta);
-	pos              = newPos + aCenter;
-	vec2 uv          = aTextureCoord * .5;
-	pos          += texture2D(texture, uv).rgb * 1.0;
-
-	const float maxRadius = 1200.0;
+	vec3 axis             = aRotAxis;
+	float thetaOffset     = clamp(-aTheta.y-.2 + stepper, 0.0, 1.0);
+	float theta           = aTheta.x * elasticOut(thetaOffset);
+	vec3 pos              = aVertexPosition;
+	vec3 relativePos      = pos - aCenter;
+	vec3 newPos           = rotate_vertex_position(relativePos, axis, theta);
+	// newPos                = -(invert * vec4(newPos, 1.0)).rgb;
+	pos                   = newPos + aCenter;
+	vec2 uv               = aTextureCoord * .5;
+	pos                   += texture2D(texture, uv).rgb * 1.0;
+	
+	const float maxRadius = 1500.0;
 	const float fadeRange = 50.0;
-	float dist = min(length(pos), maxRadius);
-	float opacityOffset = 1.0;
+	float dist            = min(length(pos), maxRadius);
+	float opacityOffset   = 1.0;
 	if(dist > maxRadius - fadeRange) {
 		opacityOffset = (maxRadius - dist) / fadeRange;
 	}
+
+	const float minRadius = 400.0;
+	if(aTheta.z > 0.0) {
+		if(dist < minRadius-fadeRange) {
+			opacityOffset = 0.0;
+		} else if(dist < minRadius) {
+			opacityOffset = 1.0 - (minRadius - dist)/fadeRange;
+		}
+	}
+
 	vOpacity		 = opacityOffset;
 
 	gl_Position      = uPMatrix * uMVMatrix * vec4(pos, 1.0);

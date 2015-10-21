@@ -17,7 +17,6 @@ window.params = {
 	var SceneApp = require("./SceneApp");
 
 	App = function() {
-
 		var assets = ["assets/gradient.jpg", "assets/gradientMap.jpg"]
 		var loader = new bongiovi.SimpleImageLoader();
 		loader.load(assets, this, this._onImageLoaded);
@@ -53,6 +52,7 @@ window.params = {
 	};
 
 	p._loop = function() {
+		TWEEN.update();
 		this._scene.loop();
 	};
 

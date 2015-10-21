@@ -171,7 +171,12 @@ p._onKey = function(e) {
 		this._subScene.start();
 		this.globalOpacity.value = 0;
 		// this.camera.radius.value = 1450;
-		bongiovi.Scheduler.delay(this, this.zoomOut, null, 700);
+		// bongiovi.Scheduler.delay(this, this.zoomOut, null, 700);
+
+		if(this.tweenCamera) TWEEN.remove(this.tweenCamera);
+
+		// this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1250}, 1500).easing(TWEEN.Easing.Exponential.InOut).start();
+		this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1250}, 1500).easing(TWEEN.Easing.Quadratic.InOut).start();
 	} else if(e.keyCode == 82) {
 		this._subScene.reset();
 		this.camera.radius.value = 750;
@@ -180,7 +185,7 @@ p._onKey = function(e) {
 };
 
 p.zoomOut = function() {
-	this.camera.radius.value = 1450;
+	// this.camera.radius.value = 1250;
 };
 
 p._initTextures = function() {

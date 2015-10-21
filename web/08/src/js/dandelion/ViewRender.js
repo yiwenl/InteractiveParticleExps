@@ -130,24 +130,24 @@ p._init = function() {
 		var r1 = Math.random();
 
 		if(i == 72 || 1) {
-			addVertex(p0, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p1, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p2, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p3, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p4, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p5, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p6, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p7, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(p8, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(pCenter, uv, pCenter, axis, [angle, r0, r1]);
-			addVertex(pCenter1, uv, pCenter, axis, [angle, r0, r1]);
+			addVertex(p0, uv, pCenter, axis, [angle, r0, 0]);
+			addVertex(p1, uv, pCenter, axis, [angle, r0, 0]);
+			addVertex(p2, uv, pCenter, axis, [angle, r0, 0]);
+			addVertex(p3, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(p4, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(p5, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(p6, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(p7, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(p8, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(pCenter, uv, pCenter, axis, [angle, r0, 1]);
+			addVertex(pCenter1, uv, pCenter, axis, [angle, r0, 1]);
 		}
 		
 		this.allPoints[index] = [p0, p1, p2, p3, p4, p5, p6, p7, p8, pCenter, pCenter1];
 		this.centers[index] = pCenter;
 		this.uvs[index] = uv;
 		this.axis[index] = axis;
-		this.thetas[index] = [angle, r0, r1];
+		this.thetas[index] = [angle, r0, 0];
 	}
 
 	// this.mesh = new bongiovi.Mesh(positions.length, indices.length, GL.gl.POLYGON);
@@ -162,7 +162,7 @@ p._init = function() {
 };
 
 
-p.render = function(texture, stepper) {
+p.render = function(texture, stepper, invert) {
 
 	if(!this.mesh) return;
 
@@ -170,6 +170,7 @@ p.render = function(texture, stepper) {
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("opacity", "uniform1f", this.opacity.value);
 	this.shader.uniform("stepper", "uniform1f", stepper || 1);
+	this.shader.uniform("invert", "uniformMatrix4fv", invert);
 	texture.bind(0);
 	GL.draw(this.mesh);
 };

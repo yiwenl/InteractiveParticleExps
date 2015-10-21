@@ -21,12 +21,12 @@ p.constructor = ViewRenderLines;
 
 p._init = function() {	
 	gl = GL.gl;
-	var points = this._vRender.allPoints;
-	var uvs = this._vRender.uvs;
-	var cs = this._vRender.centers;
-	var axises = this._vRender.axis;
-	var thetas = this._vRender.thetas;
-
+	var points       = this._vRender.allPoints;
+	var uvs          = this._vRender.uvs;
+	var cs           = this._vRender.centers;
+	var ax           = this._vRender.axis;
+	var th           = this._vRender.thetas;
+	
 	var positions    = [];
 	var coords       = [];
 	var indices      = []; 
@@ -34,7 +34,6 @@ p._init = function() {
 	var rotationAxis = [];
 	var angles       = [];
 	var count        = 0;
-	var numParticles = params.numParticles;
 
 
 	function addLine(p0, p1, uv, center, a, an) {
@@ -57,27 +56,33 @@ p._init = function() {
 		var ps = points[i];
 		var uv = uvs[i];
 		var center = cs[i];
-		var axis = axises[i];
-		var angle = thetas[i];
+		var a = ax[i];
+		var t = th[i];
+		var a0 = [t[0], t[0], 1]
+		var a1 = [t[0], t[0], 2]
+		// angle[2] = 1;
 
 		if(i == 72/3 || 1) {
-			addLine(ps[9], ps[10], uv, center, axis, angle);	
-			addLine(ps[9], ps[0], uv, center, axis, angle);	
-			addLine(ps[9], ps[1], uv, center, axis, angle);	
-			addLine(ps[9], ps[2], uv, center, axis, angle);	
+			addLine(ps[0], ps[1], uv, center, a, t);
+			addLine(ps[1], ps[2], uv, center, a, t);
+			addLine(ps[2], ps[0], uv, center, a, t);
 
-			addLine(ps[3], ps[8], uv, center, axis, angle);	
-			addLine(ps[8], ps[4], uv, center, axis, angle);	
-			addLine(ps[4], ps[6], uv, center, axis, angle);	
-			addLine(ps[6], ps[5], uv, center, axis, angle);	
-			addLine(ps[5], ps[7], uv, center, axis, angle);	
-			addLine(ps[7], ps[3], uv, center, axis, angle);	
+			addLine(ps[9], ps[10], uv, center, a, a0);
+			addLine(ps[9], ps[0], uv, center, a, a0);
+			addLine(ps[9], ps[1], uv, center, a, a0);
+			addLine(ps[9], ps[2], uv, center, a, a0);
+
+			addLine(ps[3], ps[8], uv, center, a, a0);	
+			addLine(ps[8], ps[4], uv, center, a, a0);	
+			addLine(ps[4], ps[6], uv, center, a, a0);	
+			addLine(ps[6], ps[5], uv, center, a, a0);	
+			addLine(ps[5], ps[7], uv, center, a, a0);	
+			addLine(ps[7], ps[3], uv, center, a, a0);	
 		}
 		
 	}
 
 	this.mesh = new bongiovi.Mesh(positions.length, indices.length, GL.gl.LINES);
-	
 	this.mesh.bufferVertex(positions);
 	this.mesh.bufferTexCoords(coords);
 	this.mesh.bufferIndices(indices);
@@ -86,14 +91,14 @@ p._init = function() {
 	this.mesh.bufferData(angles, "aTheta", 3);
 };
 
-p.render = function(texture, stepper) {
-
+p.render = function(texture, stepper, invert) {
 	if(!this.mesh) return;
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("opacity", "uniform1f", this.opacity.value);
 	this.shader.uniform("stepper", "uniform1f", stepper || 1);
+	this.shader.uniform("invert", "uniformMatrix4fv", invert);
 	texture.bind(0);
 	GL.draw(this.mesh);
 };

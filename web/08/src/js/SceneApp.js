@@ -27,7 +27,7 @@ function SceneApp() {
 	GL.enableAdditiveBlending();
 	gl.disable(gl.DEPTH_TEST);
 	bongiovi.Scene.call(this);
-	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 2500);
+	this.camera.setPerspective(75 * Math.PI/180, GL.aspectRatio, 5, 2500);
 	this.camera.radius.value = 750;
 	this.camera.radius.setEasing(.02);
 	this.camera._rx.value = -.3;
@@ -115,7 +115,6 @@ p._initLeap = function() {
 		}
 
 	});
-	
 };
 
 p._clearPointers = function(newPointers) {
@@ -163,29 +162,17 @@ p._checkPointers = function(pointer) {
 	this._pointers.push(o);
 };
 
-
 p._onKey = function(e) {
-	// console.log(e.keyCode);
-
 	if(e.keyCode === 32) {	//	spacebar
 		this._subScene.start();
 		this.globalOpacity.value = 0;
-		// this.camera.radius.value = 1450;
-		// bongiovi.Scheduler.delay(this, this.zoomOut, null, 700);
-
 		if(this.tweenCamera) TWEEN.remove(this.tweenCamera);
-
-		// this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1250}, 1500).easing(TWEEN.Easing.Exponential.InOut).start();
-		this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1250}, 1500).easing(TWEEN.Easing.Quadratic.InOut).start();
+		this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1000}, 1500).easing(TWEEN.Easing.Quadratic.InOut).start();
 	} else if(e.keyCode == 82) {
 		this._subScene.reset();
 		this.camera.radius.value = 750;
 		this.globalOpacity.value = 1;
 	}
-};
-
-p.zoomOut = function() {
-	// this.camera.radius.value = 1250;
 };
 
 p._initTextures = function() {

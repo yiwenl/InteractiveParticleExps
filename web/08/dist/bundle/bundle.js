@@ -4826,7 +4826,7 @@ p.render = function() {
 
 
 	if(params.group1) {
-		this._vDots.render(1.0);
+		this._vDots.render(this.globalOpacity.value);
 		this._vSphereDot1.render(hr, hl, this.globalOpacity.value);
 		this._vInterSphere1.render(hr, hl, this.globalOpacity.value);
 		this._vInterLine1.render(hr, hl, this.globalOpacity.value);	
@@ -4971,7 +4971,7 @@ function ViewDots(size) {
 	this.color = [1, 1, 1];
 	this.opacity = 1;
 	this.size = size;
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// sphereDot.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aExtra;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform float size;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vVertex;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition;\n\tpos           = normalize(pos) * (size + aExtra.x);\n\tgl_Position   = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tvTextureCoord = aTextureCoord;\n\tvVertex       = pos;\n\n\tgl_PointSize  = 2.0 + aTextureCoord.x * 4.0;\n}", "#define GLSLIFY 1\n// dots.frag\n\n// additiveColor.frag\n\nprecision highp float;\n\nuniform vec3 color;\nuniform float opacity;\n\nconst vec2 center = vec2(.5);\n\nvoid main(void) {\n\tif(distance(gl_PointCoord, center) > .5) discard;\n\tgl_FragColor = vec4(color * opacity, 1.0);\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// sphereDot.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aExtra;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform float size;\nuniform float globalOpacity;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vVertex;\nvarying float vAlpha;\n\nfloat exponentialIn(float t) {\n  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));\n}\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition;\n\tpos           = normalize(pos) * (size + aExtra.x);\n\tgl_Position   = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tvTextureCoord = aTextureCoord;\n\tvVertex       = pos;\n\n\tconst float fadeRange = 50.0;\n\tfloat radius  = size + 200.0 * exponentialIn(1.0 - globalOpacity);\n\tfloat l \t  = length(pos);\n\tfloat alpha   = 1.0;\n\tif(l < radius - fadeRange) {\n\t\talpha = 0.0;\n\t} else if(l < radius) {\n\t\talpha = 1.0 - (radius - l) / fadeRange;\n\t} \n\n\n\tvAlpha = alpha;\n\n\n\tgl_PointSize  = 2.0 + aTextureCoord.x * 4.0;\n}", "#define GLSLIFY 1\n// sphereDots.frag\nprecision highp float;\n\nuniform vec3 color;\nuniform float opacity;\nvarying float vAlpha;\n\nconst vec2 center = vec2(.5);\n\nvoid main(void) {\n\tif(distance(gl_PointCoord, center) > .5) discard;\n\tgl_FragColor = vec4(color * opacity * vAlpha, 1.0);\n}");
 }
 
 var p = ViewDots.prototype = new bongiovi.View();
@@ -5015,8 +5015,9 @@ p.render = function(globalOpacity) {
 
 	this.shader.bind();
 	this.shader.uniform("color", "uniform3fv", this.color);
-	this.shader.uniform("opacity", "uniform1f", this.opacity * globalOpacity);
+	this.shader.uniform("opacity", "uniform1f", this.opacity);
 	this.shader.uniform("size", "uniform1f", this.size);
+	this.shader.uniform("globalOpacity", "uniform1f", globalOpacity);
 	GL.draw(this.mesh);
 };
 

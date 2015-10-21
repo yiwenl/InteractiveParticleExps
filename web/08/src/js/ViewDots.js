@@ -10,7 +10,7 @@ function ViewDots(size) {
 	this.color = [1, 1, 1];
 	this.opacity = 1;
 	this.size = size;
-	bongiovi.View.call(this, glslify("../shaders/sphereDot.vert"), glslify("../shaders/dots.frag"));
+	bongiovi.View.call(this, glslify("../shaders/sphereDot.vert"), glslify("../shaders/sphereDots.frag"));
 }
 
 var p = ViewDots.prototype = new bongiovi.View();
@@ -54,8 +54,9 @@ p.render = function(globalOpacity) {
 
 	this.shader.bind();
 	this.shader.uniform("color", "uniform3fv", this.color);
-	this.shader.uniform("opacity", "uniform1f", this.opacity * globalOpacity);
+	this.shader.uniform("opacity", "uniform1f", this.opacity);
 	this.shader.uniform("size", "uniform1f", this.size);
+	this.shader.uniform("globalOpacity", "uniform1f", globalOpacity);
 	GL.draw(this.mesh);
 };
 

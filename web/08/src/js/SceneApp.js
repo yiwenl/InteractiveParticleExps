@@ -285,7 +285,7 @@ p.render = function() {
 
 
 	if(params.group1) {
-		this._vDots.render(1.0);
+		this._vDots.render(this.globalOpacity.value);
 		this._vSphereDot1.render(hr, hl, this.globalOpacity.value);
 		this._vInterSphere1.render(hr, hl, this.globalOpacity.value);
 		this._vInterLine1.render(hr, hl, this.globalOpacity.value);	

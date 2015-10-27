@@ -10,6 +10,7 @@ var ViewSphereDots        = require("./ViewSphereDots");
 var ViewInteractiveLine   = require("./ViewInteractiveLine");
 var ViewSingleDot         = require("./ViewSingleDot");
 var ViewInteractiveDot    = require("./ViewInteractiveDot");
+var ViewLightSphere 	  = require("./ViewLightSphere");
 var LeapControl           = require("./LeapControl");
 var TouchDetection        = require("./TouchDetection");
 var ViewPost              = require("./ViewPost");
@@ -38,6 +39,7 @@ function SceneApp() {
 	this._initLeap();
 	this._subScene = new SubsceneDandelion(this);
 	this._touch = new TouchDetection(params.sphereSize * .8, this);
+	this._state = 0;
 
 	window.addEventListener("resize", this.resize.bind(this));
 	window.addEventListener("keydown", this._onKey.bind(this));
@@ -164,15 +166,21 @@ p._checkPointers = function(pointer) {
 
 p._onKey = function(e) {
 	if(e.keyCode === 32) {	//	spacebar
-		this._subScene.start();
-		this.globalOpacity.value = 0;
-		if(this.tweenCamera) TWEEN.remove(this.tweenCamera);
-		this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1000}, 1500).easing(TWEEN.Easing.Quadratic.InOut).start();
-	} else if(e.keyCode == 82) {
-		this._subScene.reset();
-		this.camera.radius.value = 750;
-		this.globalOpacity.value = 1;
-	}
+		if(this._state == 0) {
+			this._state = 1;
+			this._subScene.start();
+			this.globalOpacity.value = 0;
+			if(this.tweenCamera) TWEEN.remove(this.tweenCamera);
+			this.tweenCamera = new TWEEN.Tween(this.camera.radius).delay(500).to({value:1000}, 1500).easing(TWEEN.Easing.Quadratic.InOut).start();
+			this.sceneRotation.setCameraPos([0, 0, 1, 0]);
+		} else {
+			this._state = 0;
+			this._subScene.reset();
+			this.camera.radius.value = 750;
+			this.globalOpacity.value = 1;
+		}
+		
+	} 
 };
 
 p._initTextures = function() {
@@ -224,7 +232,8 @@ p._initViews = function() {
 	this._vInterLine3 = new ViewInteractiveLine("assets/sphere60.obj", radius4, [1, 1, 1], .25, true);
 	this._vInterDot3 = new ViewInteractiveDot("assets/sphere60.obj", radius4, [1, 1, 1], .5, true);
 	this._vInterDot3.pointSize = 2.0;
-	
+		
+	this._vLightSphere = new ViewLightSphere();
 };
 
 
@@ -298,6 +307,9 @@ p.render = function() {
 		this._subScene.render(this.invert);
 	}
 
+	this._vLightSphere.render(null, .6);
+	this._vLightSphere.render([-400, -300, -300], .35);
+
 	this._fboRender.unbind();
 
 
@@ -312,6 +324,10 @@ p.render = function() {
 	GL.enableAlphaBlending();
 	GL.setViewport(0, 0, GL.width, GL.height);
 	this._vPost.render(this._fboRender.getTexture(), this._textureGrd, this._textureGrdMap);
+
+	GL.setMatrices(this.camera);
+	GL.rotate(this.sceneRotation.matrix);
+
 };
 
 p.resize = function() {

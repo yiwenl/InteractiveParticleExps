@@ -22,3 +22,17 @@ h1, h2, h3, h4, text, p {
   top: 0px;
   left: 0px;
   position: absolute; }
+
+.description {
+  position: absolute;
+  bottom: 30px;
+  width: 100%;
+  color: white;
+  opacity: .5;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 400;
+  text-align: center;
+  letter-spacing: 3px; }

@@ -16,6 +16,7 @@ glm.vec3.unproject = function(vec, view, proj, viewport) {
 	v[3] = 1.0;
 
 	//build and invert viewproj matrix
+	// glm.mat4.multiply(m,proj,view);
 	glm.mat4.multiply(m,view,proj);
 	if(!glm.mat4.invert(im,m)) { return null; }
 	 
@@ -51,28 +52,17 @@ p._init = function() {
 
 	this.mouse = glm.vec3.create();
 
-	// window.addEventListener("mousemove", this._onMove.bind(this));
+	window.addEventListener("mousedown", this._onMove.bind(this));
 };
 
 
+var map = function(value, sx, sy, tx, ty) {
+	var p = (value - sx) / ( sy - sx);
+	return tx + p * ( ty - tx);
+};
+
 p._onMove = function(e) {
-	this.mouse[0] = e.clientX;
-	this.mouse[1] = e.clientY;
-	this.mouse[2] = 0;
-	this.viewport[2] = window.innerWidth;
-	this.viewport[3] = window.innerHeight;
-
-	var view = this._scene.camera.getMatrix();
-	var proj = this._scene.camera.projection;
-
-	var vNear = glm.vec3.unproject(this.mouse, view, proj, this.viewport);
-	this.mouse[2] = 1;
-	var vFar = glm.vec3.unproject(this.mouse, view, proj, this.viewport);
-	// console.log(vNear, vFar);
-
-	for(var i=0; i<this._vertices.length; i++) {
-		
-	}
+	
 };
 
 

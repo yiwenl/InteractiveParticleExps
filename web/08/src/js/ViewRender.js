@@ -4,6 +4,7 @@ var gl;
 var glslify = require("glslify");
 
 function ViewRender() {
+	this.count = Math.random() * 0xFFFF;
 	bongiovi.View.call(this, glslify("../shaders/render.vert"), glslify("../shaders/render.frag"));
 }
 
@@ -38,14 +39,16 @@ p._init = function() {
 };
 
 p.render = function(texture, textureNext, percent) {
-
+	this.count += .01;
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	texture.bind(0);
 	this.shader.uniform("textureNext", "uniform1i", 1);
 	textureNext.bind(1);
 	this.shader.uniform("percent", "uniform1f", percent);
+	this.shader.uniform("time", "uniform1f", this.count);
 	GL.draw(this.mesh);
+
 };
 
 module.exports = ViewRender;
